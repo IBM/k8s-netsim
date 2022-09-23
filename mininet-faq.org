@@ -1,0 +1,16 @@
+* Install
+  `pip3 install mininet`
+  `sudo dnf install bridge-utils`
+* mn-exec is missing 
+  1. Download the source code, and compile `gcc mn-exec.c -o mn-exec` to get the mn-exec binary. Move it to somewhere in $PATH.
+
+* Sanity Check
+  Run:
+  `sudo mn --switch lxbr`.
+
+  Then, try to connect the hosts:
+  `h1 ping h2`.
+
+* If stuck in un-clean state
+  Run:
+  `sudo mn -c`

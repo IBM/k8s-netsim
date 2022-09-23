@@ -1,0 +1,22 @@
+* k8s sim
+  1. kubectl create pod - just create containers (which are connected via flannel)
+     1. Specify label for services
+     2. User specified node - simplified running of pods
+  2. deployment?
+  3. kubectl create service - create kubeproxy rules
+     1. Want to give list of pods or use label selector based
+  4. kubectl exec pod
+  5. Multi-cluster - basic connectivity
+* User interaction 
+  1. Exec c1, ping c2.podip
+  2. Exec c1, ping s2.vip (should go to c2) (nping)
+  3. Exec c1, ping s3.vip (running on another cluster)
+     1. VIP or service name? How does skupper manage?
+  4. (optional) Show policy simulation
+* Challenges
+  1. Use flanneld with docker containers
+  2. Run kubeproxy on single node on it's own
+     1. Instead simulate using nft
+  3. Coredns setup - maybe skip in interest of time/overheads
+  4. Multi-clusters qpid dispatch router based routing
+     1. Simulation of skupper
