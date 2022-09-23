@@ -1,0 +1,11 @@
+{
+    "Network": "11.0.0.0/8",
+    "SubnetLen": 20,
+    "SubnetMin": "11.10.0.0",
+    "SubnetMax": "11.99.0.0",
+    "Backend": {
+        "Type": "vxlan",
+        "VNI": 100,
+        "Port": 8472
+    }
+}

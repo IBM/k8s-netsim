@@ -24,16 +24,40 @@ class Etcd(Node):
 --advertise-client-urls http://{1}:2379
 --initial-cluster-token etcd-cluster
 --initial-cluster {2}
---initial-cluster-state new &""".replace("\n", " ")
+--initial-cluster-state new > /tmp/knetsim/{0}.log &""".replace("\n", " ")
 
         cmd = cmd_t.format(self.name, self.IP(), self.cluster)
-        print(cmd)
+        self.cmd(cmd)
+        self.waitOutput()
+
+    def loadFlannelConf(self):
+        cmd = "/tmp/knetsim/etcdctl set /coreos.com/network/config < /tmp/knetsim/conf/flannel-network-config.json"
         self.cmd(cmd)
         self.waitOutput()
 
     def terminate(self):
         # undo things, if needed
         super(Etcd, self).terminate()
+
+class Worker(Node):
+    def config(self, **params):
+        super(Worker, self).config(**params)
+        self.etcd = params["etcd"]
+
+    def start(self):
+        cmd_t = """nohup /tmp/knetsim/flanneld
+-iface={0}
+-etcd-endpoints "http://{1}:2379"
+-subnet-file /tmp/knetsim/{2}-flannel-subnet.env
+> /tmp/knetsim/{2}.log &""".replace("\n", " ")
+        cmd = cmd_t.format(self.IP(), self.etcd, self.name)
+
+        self.cmd(cmd)
+        self.waitOutput()
+
+    def terminate(self):
+        # undo things, if needed
+        super(Worker, self).terminate()
 
 class UnderlayTopo(Topo):
     def build(self):
@@ -50,17 +74,31 @@ class UnderlayTopo(Topo):
         self.addLink(e1, s0)
         self.addLink(e2, s0)
 
+        # Add worker nodes
+        w1 = self.addNode('w1', cls=Worker, etcd='10.0.0.1')
+        w2 = self.addNode('w2', cls=Worker, etcd='10.0.0.1')
+        w3 = self.addNode('w3', cls=Worker, etcd='10.0.0.1')
+
+        # connect workers to top level
+        self.addLink(w1, s0)
+        self.addLink(w2, s0)
+        self.addLink(w3, s0)
+
 def cleanup():
     # stop running processes
-    os.system("killall -9 etcd")
+    os.system("killall -9 etcd flanneld")
     # clean up config folder
     os.system("rm -rf /tmp/knetsim/")
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
 
+    logging.info("Cleaning up prev run stragglers...")
+    cleanup()
+
     # prepare configuration dir somewhere which is accessible
     os.system("cp -r ./bin/ /tmp/knetsim/")
+    os.system("cp -r ./conf/ /tmp/knetsim/conf/")
 
     # Setup LinuxBridge
     os.system('sysctl net.bridge.bridge-nf-call-arptables=0')
@@ -77,6 +115,16 @@ def main():
 
     e1.start()
     e2.start()
+
+    e1.loadFlannelConf()
+
+    w1 = net.getNodeByName("w1")
+    w2 = net.getNodeByName("w2")
+    w3 = net.getNodeByName("w3")
+
+    w1.start()
+    w2.start()
+    w3.start()
 
     CLI(net)
 
