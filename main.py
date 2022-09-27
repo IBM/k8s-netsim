@@ -2,6 +2,7 @@
 
 import logging
 import os
+import time
 
 from mininet.net import Mininet
 from mininet.node import Node
@@ -9,6 +10,8 @@ from mininet.nodelib import LinuxBridge
 from mininet.cli import CLI
 from mininet.topo import Topo
 from mininet.link import TCLink
+
+from dotenv import dotenv_values
 
 class Etcd(Node):
     def config(self, **params):
@@ -44,16 +47,64 @@ class Worker(Node):
         super(Worker, self).config(**params)
         self.etcd = params["etcd"]
 
-    def start(self):
+        # make a working dir for all worker flags etc
+        os.mkdir("/tmp/knetsim/"+self.name)
+
+    def start_flannel(self):
         cmd_t = """nohup /tmp/knetsim/flanneld
 -iface={0}
 -etcd-endpoints "http://{1}:2379"
--subnet-file /tmp/knetsim/{2}-flannel-subnet.env
-> /tmp/knetsim/{2}.log &""".replace("\n", " ")
+-subnet-file /tmp/knetsim/{2}/flannel-subnet.env
+> /tmp/knetsim/{2}/flannel.log &""".replace("\n", " ")
         cmd = cmd_t.format(self.IP(), self.etcd, self.name)
 
         self.cmd(cmd)
         self.waitOutput()
+
+    def start_containerd(self):
+        cmd_t = """nohup /tmp/knetsim/containerd
+--config=/tmp/knetsim/conf/containerd-config.toml
+--root=/tmp/knetsim/{0}/root
+--state=/tmp/knetsim/{0}/state
+--address=/tmp/knetsim/{0}/grpc.sock
+> /tmp/knetsim/{0}/containerd.log &""".replace("\n", " ")
+        cmd = cmd_t.format(self.name)
+
+        self.cmd(cmd)
+        self.waitOutput()
+
+    def start_docker(self):
+       fc = dotenv_values("/tmp/knetsim/"+self.name+"/flannel-subnet.env")
+
+#--bridge=kns{0}d
+#ip link add name kns{0}d type bridge;
+#ip addr add {1} dev kns{0}d;
+#ip link set dev kns{0}d up;
+
+       cmd_t = """
+nohup dockerd
+--data-root=/tmp/knetsim/{0}/docker-data
+--exec-root=/tmp/knetsim/{0}/docker-exec
+--host=unix:///tmp/knetsim/{0}/docker.socket
+--containerd=/tmp/knetsim/{0}/grpc.sock
+--cgroup-parent={0}
+--pidfile=/tmp/knetsim/{0}/docker.pid
+--bip={1}
+--mtu={2}
+> /tmp/knetsim/{0}/docker.log &
+""".replace("\n", " ")
+       cmd = cmd_t.format(self.name, fc["FLANNEL_SUBNET"], fc["FLANNEL_MTU"])
+
+       print(cmd)
+       self.cmd(cmd)
+       self.waitOutput()
+
+    def start(self):
+        self.start_flannel()
+        #self.start_containerd()
+        # give time for flannel to prepare the subnet files
+        time.sleep(2)
+        #self.start_docker()
 
     def terminate(self):
         # undo things, if needed
@@ -86,6 +137,7 @@ class UnderlayTopo(Topo):
 
 def cleanup():
     # stop running processes
+    os.system("pkill -f .*knetsim.*")
     os.system("killall -9 etcd flanneld")
     # clean up config folder
     os.system("rm -rf /tmp/knetsim/")
