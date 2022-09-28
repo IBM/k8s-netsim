@@ -69,7 +69,7 @@ class Worker(Node):
                 "dataDir": "/tmp/knetsim/{0}/flannel".format(self.name)}
         return conf
 
-    def setup_flannel(self):
+    def setup_cni(self):
         # build up the json conf for use at container creation time
         with open("/tmp/knetsim/{0}/flannel_conf.json".format(self.name), "w") as conffile:
             json.dump(self._gen_flannel_conf(), conffile)
@@ -98,7 +98,7 @@ class Worker(Node):
 
     def exec_container(self, name, cmd):
         # enter netns and run command
-        print(self.cmd("ip netns exec {0} {1}".format(self._container_name(name), cmd)))
+        return self.cmd("ip netns exec {0} {1}".format(self._container_name(name), cmd))
 
     def terminate(self):
         # undo things, if needed
@@ -182,9 +182,9 @@ def main():
     # wait for flannel configuration to propogate
     time.sleep(1)
 
-    w1.setup_flannel()
-    w2.setup_flannel()
-    w3.setup_flannel()
+    w1.setup_cni()
+    w2.setup_cni()
+    w3.setup_cni()
 
     w1.create_container("c1")
     w1.create_container("c2")
