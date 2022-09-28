@@ -78,6 +78,8 @@ class Worker(Node):
         return self.name + name
 
     def create_container(self, name):
+        # 0. Remove old netns, if exists. This shouldn't happen - but just for safety
+        self.cmd("ip netns del {0}".format(self._container_name(name)))
         # 1. Create netns
         self.cmd("ip netns add {0}".format(self._container_name(name)))
         # 2. Run flannel cni in the netns
@@ -100,7 +102,12 @@ class Worker(Node):
 
     def terminate(self):
         # undo things, if needed
-        # TODO: clean up all containers
+
+        # clean up all containers
+        # we need to use a copy, since the delete function manipulates the same list
+        for c in self.containers.copy():
+            self.delete_container(c)
+
         super(Worker, self).terminate()
 
 class UnderlayTopo(Topo):
@@ -161,6 +168,7 @@ def main():
     e1.start()
     e2.start()
 
+    time.sleep(2)
     e1.loadFlannelConf()
 
     w1 = net.getNodeByName("w1")
@@ -172,7 +180,7 @@ def main():
     w3.start_flannel()
 
     # wait for flannel configuration to propogate
-    time.sleep(2)
+    time.sleep(1)
 
     w1.setup_flannel()
     w2.setup_flannel()
@@ -184,9 +192,7 @@ def main():
 
     CLI(net)
 
-    w1.delete_container("c1")
-    w1.delete_container("c2")
-    w2.delete_container("c1")
+    # don't need to delete_containers manually, since we have a teardown function that does it
 
     net.stop()
     logging.info("Cleaning up loose ends...")
