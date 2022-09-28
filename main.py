@@ -3,6 +3,7 @@
 import logging
 import os
 import time
+import json
 
 from mininet.net import Mininet
 from mininet.node import Node
@@ -44,6 +45,7 @@ class Worker(Node):
     def config(self, **params):
         super(Worker, self).config(**params)
         self.etcd = params["etcd"]
+        self.containers = []
 
         # make a working dir for all worker flags etc
         os.mkdir("/tmp/knetsim/"+self.name)
@@ -59,11 +61,45 @@ class Worker(Node):
         self.cmd(cmd)
         self.waitOutput()
 
-    def start(self):
-        self.start_flannel()
+    def _gen_flannel_conf(self):
+        conf = {"name": self.name,
+                "type": "flannel",
+                "subnetFile": "/tmp/knetsim/{0}/flannel-subnet.env".format(self.name),
+                "dataDir": "/tmp/knetsim/{0}/flannel".format(self.name)}
+        return conf
+
+    def setup_flannel(self):
+        # build up the json conf for use at container creation time
+        with open("/tmp/knetsim/{0}/flannel_conf.json".format(self.name), "w") as conffile:
+            json.dump(self._gen_flannel_conf(), conffile)
+
+    def _container_name(self, name):
+        return self.name + name
+
+    def create_container(self, name):
+        # 1. Create netns
+        self.cmd("ip netns add {0}".format(self._container_name(name)))
+        # 2. Run flannel cni in the netns
+        cmd = "CNI_PATH=/tmp/knetsim/cni NETCONFPATH=/tmp/knetsim/{0} /tmp/knetsim/cnitool add \"{0}\" /var/run/netns/{1}".format(self.name, self._container_name(name))
+        logging.debug(self.cmd(cmd))
+        # 3. Add container to list of containers
+        self.containers.append(name)
+
+    def delete_container(self, name):
+        # 1. Run the cnitool delete command.
+        self.cmd("CNI_PATH=/tmp/knetsim/cni NETCONFPATH=/tmp/knetsim/{0} /tmp/knetsim/cnitool del \"{0}\" /var/run/netns/{1}".format(self.name, self._container_name(name)))
+        # 2. Delete the netns.
+        self.cmd("ip netns del {0}".format(self._container_name(name)))
+        # 2. Remove container from list of containers.
+        self.containers.remove(name)
+
+    def exec_container(self, name, cmd):
+        # enter netns and run command
+        print(self.cmd("ip netns exec {0} {1}".format(self._container_name(name), cmd)))
 
     def terminate(self):
         # undo things, if needed
+        # TODO: clean up all containers
         super(Worker, self).terminate()
 
 class UnderlayTopo(Topo):
@@ -130,11 +166,26 @@ def main():
     w2 = net.getNodeByName("w2")
     w3 = net.getNodeByName("w3")
 
-    w1.start()
-    w2.start()
-    w3.start()
+    w1.start_flannel()
+    w2.start_flannel()
+    w3.start_flannel()
+
+    # wait for flannel configuration to propogate
+    time.sleep(2)
+
+    w1.setup_flannel()
+    w2.setup_flannel()
+    w3.setup_flannel()
+
+    w1.create_container("c1")
+    w1.create_container("c2")
+    w2.create_container("c1")
 
     CLI(net)
+
+    w1.delete_container("c1")
+    w1.delete_container("c2")
+    w2.delete_container("c1")
 
     net.stop()
     logging.info("Cleaning up loose ends...")

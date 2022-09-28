@@ -5,11 +5,11 @@
 ### Setup prereqs
 
 1. Mininet
-2. Docker
 
 ### Setup folder
 
-1. Ensure that the following binaries are in the `./bin` folder: `etcd`, `etcdctl`, `flanneld`
+1. Ensure that the following binaries are in the `./bin` folder: `etcd`, `etcdctl`, `flanneld`, `cnitool`.
+2. Ensure that the `./bin/cni` directory has the following cni-plugin binaries: `bridge`, `host-local`, `flannel`.
 
 ## Troubleshooting
 
@@ -43,3 +43,21 @@ flannel.100: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1450
         TX packets 0  bytes 0 (0.0 B)
         TX errors 0  dropped 10 overruns 0  carrier 0  collisions 0
 ```
+
+### Check flannel powered connectivity between containers
+
+```
+mininet> py w1.exec_container("c1", "ifconfig")
+mininet> py w1.exec_container("c2", "ifconfig")
+mininet> py w2.exec_container("c1", "ifconfig")
+```
+
+Note the various IPs. Now, try ping tests:
+
+```
+mininet> py w1.exec_container("c1", "ping <ip> -c 5")
+```
+Feed the ip of either another container on the same host, or a container on another host.
+
+Note: `exec_container` function only returns output after the command has completed, so you need to run time-bounded commands there.
+
