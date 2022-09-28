@@ -61,3 +61,32 @@ Feed the ip of either another container on the same host, or a container on anot
 
 Note: `exec_container` function only returns output after the command has completed, so you need to run time-bounded commands there.
 
+### Check Kube-Proxy powered connectivity between containers
+
+In the code, we have setup a sample service entry:
+```
+c0.kp_vip_add("100.64.10.1", ["c2", "c3"])
+```
+
+Now, this means that you can ping and reach the 2 containers using this VIP.
+
+```
+> py w1.exec_container("c1", "ping 100.64.10.1 -c 5")
+```
+
+Check the nft counters on the worker:
+```
+> w1 nft list ruleset
+```
+
+You can check the load-balancing effect using something like the following. Destroy the container c3 using the command:
+```
+> py w3.delete_container("c3")
+```
+Now, if you keep running the ping command, you will notice that it fails every other time.
+
+## Known Issues
+
+### Pinging containers from workers shuts down Flannel
+
+After the first ping from the worker, the Flannel daemon just stops running breaking everything. Not sure why this is the case. Anyhow, it is recommended to only run interactions from within containers.

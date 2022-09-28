@@ -46,6 +46,7 @@ class Worker(Node):
     def config(self, **params):
         super(Worker, self).config(**params)
         self.etcd = params["etcd"]
+        self.cluster = params["cluster"]
         self.containers = []
 
         # make a working dir for all worker flags etc
@@ -66,7 +67,11 @@ class Worker(Node):
         conf = {"name": self.name,
                 "type": "flannel",
                 "subnetFile": "/tmp/knetsim/{0}/flannel-subnet.env".format(self.name),
-                "dataDir": "/tmp/knetsim/{0}/flannel".format(self.name)}
+                "dataDir": "/tmp/knetsim/{0}/flannel".format(self.name),
+                "delegate": {
+                    "isDefaultGateway": True
+                }
+        }
         return conf
 
     def setup_cni(self):
@@ -75,7 +80,7 @@ class Worker(Node):
             json.dump(self._gen_flannel_conf(), conffile)
 
     def _container_name(self, name):
-        return self.name + name
+        return "k" + self.cluster + "_" + name
 
     def create_container(self, name):
         # 0. Remove old netns, if exists. This shouldn't happen - but just for safety
@@ -110,6 +115,47 @@ class Worker(Node):
 
         super(Worker, self).terminate()
 
+class Cluster():
+    def __init__(self, cluster, workers):
+        self.name = cluster
+        self.workers = workers
+
+    def kp_vip_add(self, vip, containers):
+        """
+        The required nft rule looks like this:
+        nft add rule ip nat PREROUTING ip daddr 100.64.10.1 dnat to numgen inc mod 2 map {0: 11.11.0.2, 1: 11.15.48.2 }
+        This causes a dnat load-balanced round-robin between the provided ips, 2 in this case.
+
+        This rule is specific to the chain already created by flannel. If the CNI plugin changes, this rule will have to change. This also assumes that the container is setup with a default route to forward to host. This is only achieved with Flannel using isDefaultGateway parameter set to True to be passed onto the bridge cni plugin.
+        """
+
+        # 1. Lookup ips of all given containers
+        ips = []
+        # for each container
+        for c in containers:
+            # iterate over the workers that make the cluster
+            for w in self.workers:
+                # if this worker hosts this container
+                if c in w.containers:
+                    # run local hostname lookup and add the obtained ip
+                    ips.append(w.exec_container(c, "hostname -I").split()[0])
+                    break
+        logging.debug("Looking up ips of containers: %s", ips)
+
+        # 2. Generate nft rules to be programmed
+        nft_map = ""
+        for idx, ip in enumerate(ips):
+            if idx != 0:
+                nft_map += ", "
+            nft_map += "{0}: {1}".format(idx, ip)
+        # triple curly bracked needed since we need one actual curly bracket in the output
+        nft_cmd = "nft add rule ip nat PREROUTING ip daddr {0} counter dnat to numgen inc mod {1} map {{{2}}}".format(vip, len(ips), nft_map)
+        logging.debug("Generated nft command: %s", nft_cmd)
+
+        # 3. Run the nft rules on all local workers
+        for w in self.workers:
+            logging.debug("Running nft cmd on %s: %s", w, w.cmd(nft_cmd))
+
 class UnderlayTopo(Topo):
     def build(self):
         # Add top level switch
@@ -126,9 +172,9 @@ class UnderlayTopo(Topo):
         self.addLink(e2, s0)
 
         # Add worker nodes
-        w1 = self.addNode('w1', cls=Worker, etcd='10.0.0.1')
-        w2 = self.addNode('w2', cls=Worker, etcd='10.0.0.1')
-        w3 = self.addNode('w3', cls=Worker, etcd='10.0.0.1')
+        w1 = self.addNode('w1', cls=Worker, etcd='10.0.0.1', cluster='0')
+        w2 = self.addNode('w2', cls=Worker, etcd='10.0.0.1', cluster='0')
+        w3 = self.addNode('w3', cls=Worker, etcd='10.0.0.1', cluster='0')
 
         # connect workers to top level
         self.addLink(w1, s0)
@@ -156,6 +202,7 @@ def main():
     os.system('sysctl net.bridge.bridge-nf-call-arptables=0')
     os.system('sysctl net.bridge.bridge-nf-call-iptables=0')
     os.system('sysctl net.bridge.bridge-nf-call-ip6tables=0')
+
 
     # Override switch to use the simple LinuxBridge standalone without controller
     # This should not be needed, but the default ovs-testcontroller seems to be broken - aka, ping is not working
@@ -187,8 +234,11 @@ def main():
     w3.setup_cni()
 
     w1.create_container("c1")
-    w1.create_container("c2")
-    w2.create_container("c1")
+    w2.create_container("c2")
+    w3.create_container("c3")
+
+    c0 = Cluster(cluster="0", workers=[w1, w2, w3])
+    c0.kp_vip_add("100.64.10.1", ["c2", "c3"])
 
     CLI(net)
 
