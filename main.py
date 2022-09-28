@@ -20,6 +20,7 @@ class Etcd(Node):
     def start(self):
         cmd_t = """nohup /tmp/knetsim/etcd
 --name {0}
+--data-dir /tmp/knetsim/{0}.etcd
 --initial-advertise-peer-urls http://{1}:2380
 --listen-peer-urls http://{1}:2380
 --listen-client-urls http://{1}:2379,http://127.0.0.1:2379
