@@ -1,5 +1,18 @@
 # knetsim
 
+## What?
+
+A simulation of Kubernetes networking using mininet for learning and prototype purposes.
+
+1. Simulate k8s workers as Mininet hosts.
+2. Simulate pods/containers as network namespaces inside these workers.
+3. Achieve pod-pod connectivity using a real Flannel setup.
+4. Achieve pod-service connectivity, ie "kube-proxy" features using nftables.
+
+The next step for this project is to:
+
+1. Enable prototyping of multi-cluster connectivity features - simulate things like Skupper, Submariner etc.
+
 ## Running
 
 Make the Docker image:
@@ -18,8 +31,8 @@ docker run -it --privileged --rm knetsim
 
 ```
 mininet> py w1.exec_container("c1", "ifconfig")
-mininet> py w1.exec_container("c2", "ifconfig")
-mininet> py w2.exec_container("c1", "ifconfig")
+mininet> py w2.exec_container("c2", "ifconfig")
+mininet> py w3.exec_container("c3", "ifconfig")
 ```
 
 Note the various IPs. Now, try ping tests:
