@@ -18,7 +18,7 @@ class Etcd(Node):
         self.cluster = params["cluster"]
 
     def start(self):
-        cmd_t = """nohup /tmp/knetsim/etcd
+        cmd_t = """nohup etcd
 --name {0}
 --data-dir /tmp/knetsim/{0}.etcd
 --initial-advertise-peer-urls http://{1}:2380
@@ -34,7 +34,7 @@ class Etcd(Node):
         self.waitOutput()
 
     def loadFlannelConf(self):
-        cmd = "/tmp/knetsim/etcdctl set /coreos.com/network/config < /tmp/knetsim/conf/flannel-network-config.json"
+        cmd = "etcdctl set /coreos.com/network/config < /tmp/knetsim/conf/flannel-network-config.json"
         self.cmd(cmd)
         self.waitOutput()
 
@@ -53,7 +53,7 @@ class Worker(Node):
         os.mkdir("/tmp/knetsim/"+self.name)
 
     def start_flannel(self):
-        cmd_t = """nohup /tmp/knetsim/flanneld
+        cmd_t = """nohup flanneld
 -iface={0}
 -etcd-endpoints "http://{1}:2379"
 -subnet-file /tmp/knetsim/{2}/flannel-subnet.env
@@ -88,14 +88,14 @@ class Worker(Node):
         # 1. Create netns
         self.cmd("ip netns add {0}".format(self._container_name(name)))
         # 2. Run flannel cni in the netns
-        cmd = "CNI_PATH=/tmp/knetsim/cni NETCONFPATH=/tmp/knetsim/{0} /tmp/knetsim/cnitool add \"{0}\" /var/run/netns/{1}".format(self.name, self._container_name(name))
+        cmd = "CNI_PATH=/opt/cni/bin NETCONFPATH=/tmp/knetsim/{0} cnitool add \"{0}\" /var/run/netns/{1}".format(self.name, self._container_name(name))
         logging.debug(self.cmd(cmd))
         # 3. Add container to list of containers
         self.containers.append(name)
 
     def delete_container(self, name):
         # 1. Run the cnitool delete command.
-        self.cmd("CNI_PATH=/tmp/knetsim/cni NETCONFPATH=/tmp/knetsim/{0} /tmp/knetsim/cnitool del \"{0}\" /var/run/netns/{1}".format(self.name, self._container_name(name)))
+        self.cmd("CNI_PATH=/opt/cni/bin NETCONFPATH=/tmp/knetsim/{0} cnitool del \"{0}\" /var/run/netns/{1}".format(self.name, self._container_name(name)))
         # 2. Delete the netns.
         self.cmd("ip netns del {0}".format(self._container_name(name)))
         # 2. Remove container from list of containers.
@@ -183,7 +183,6 @@ class UnderlayTopo(Topo):
 
 def cleanup():
     # stop running processes
-    os.system("pkill -f .*knetsim.*")
     os.system("killall -9 etcd flanneld")
     # clean up config folder
     os.system("rm -rf /tmp/knetsim/")
@@ -195,7 +194,7 @@ def main():
     cleanup()
 
     # prepare configuration dir somewhere which is accessible
-    os.system("cp -r ./bin/ /tmp/knetsim/")
+    os.system("mkdir /tmp/knetsim/")
     os.system("cp -r ./conf/ /tmp/knetsim/conf/")
 
     # Setup LinuxBridge
