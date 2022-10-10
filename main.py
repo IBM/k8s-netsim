@@ -121,9 +121,10 @@ class Worker(Node):
         super(Worker, self).terminate()
 
 class Cluster():
-    def __init__(self, cluster, numworkers=3):
+    def __init__(self, cluster, numworkers=3, etcd_prefix="10.0"):
         self.name = cluster
         self.numworkers = numworkers
+        self.etcd_prefix = etcd_prefix
         self.workers = []
 
     def deriveName(self, item):
@@ -135,9 +136,9 @@ class Cluster():
 
         # Add etcd cluster
         # hardcode IPs here so that we can refer to these in Endpoint creation
-        cluster = "%s=http://10.0.0.1:2380,%s=http://10.0.0.2:2380" % (self.deriveName("e1"), self.deriveName("e2"))
-        e1 = topo.addNode(self.deriveName('e1'), ip='10.0.0.1', cls=Etcd, cluster=cluster)
-        e2 = topo.addNode(self.deriveName('e2'), ip='10.0.0.2', cls=Etcd, cluster=cluster)
+        cluster = "{0}=http://{2}.0.1:2380,{1}=http://{2}.0.2:2380".format(self.deriveName("e1"), self.deriveName("e2"), self.etcd_prefix)
+        e1 = topo.addNode(self.deriveName('e1'), ip='%s.0.1'%self.etcd_prefix, cls=Etcd, cluster=cluster)
+        e2 = topo.addNode(self.deriveName('e2'), ip='%s.0.2'%self.etcd_prefix, cls=Etcd, cluster=cluster)
 
         # Connect etcd nodes to top level
         topo.addLink(e1, s0)
@@ -145,7 +146,7 @@ class Cluster():
 
         # Track worker names, just strings for now
         for i in range(self.numworkers):
-            w = topo.addNode(self.deriveName('w' + str(i+1)), cls=Worker, etcd='10.0.0.1', cluster=self.name)
+            w = topo.addNode(self.deriveName('w' + str(i+1)), cls=Worker, etcd='%s.0.1'%self.etcd_prefix, cluster=self.name)
             topo.addLink(w, s0)
             self.workers.append(w)
 
@@ -249,8 +250,10 @@ def main():
     os.system('sysctl net.bridge.bridge-nf-call-iptables=0')
     os.system('sysctl net.bridge.bridge-nf-call-ip6tables=0')
 
-    C0 = Cluster(cluster="0", numworkers=3)
-    topo = UnderlayTopo([C0])
+    # TODO: still need to use 10. series, else doesn't work
+    C0 = Cluster(cluster="0", numworkers=3, etcd_prefix="10.1")
+    C1 = Cluster(cluster="1", numworkers=3, etcd_prefix="10.2")
+    topo = UnderlayTopo([C0, C1])
 
     # Override switch to use the simple LinuxBridge standalone without controller
     # This should not be needed, but the default ovs-testcontroller seems to be broken - aka, ping is not working
@@ -258,16 +261,22 @@ def main():
     net.start()
 
     C0.startup(net)
+    C1.startup(net)
 
     C0.get("w1").create_container("c1")
     C0.get("w2").create_container("c2")
     C0.get("w3").create_container("c3")
-
     C0.kp_vip_add("100.64.10.1", ["c2", "c3"])
+
+    C1.get("w1").create_container("c1")
+    C1.get("w2").create_container("c2")
+    C1.get("w3").create_container("c3")
+    C1.kp_vip_add("100.64.10.1", ["c2", "c3"])
 
     # Run a test
     print("Running connectivity test...")
     print(C0.get("w1").exec_container("c1", "ping 100.64.10.1 -c 5"))
+    print(C1.get("w1").exec_container("c1", "ping 100.64.10.1 -c 5"))
 
     CLI(net)
 

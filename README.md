@@ -30,15 +30,15 @@ docker run -it --privileged --rm knetsim
 ### Check flannel powered connectivity between containers
 
 ```
-mininet> py w1.exec_container("c1", "ifconfig")
-mininet> py w2.exec_container("c2", "ifconfig")
-mininet> py w3.exec_container("c3", "ifconfig")
+mininet> py C0w1.exec_container("c1", "ifconfig")
+mininet> py C0w2.exec_container("c2", "ifconfig")
+mininet> py C0w3.exec_container("c3", "ifconfig")
 ```
 
 Note the various IPs. Now, try ping tests:
 
 ```
-mininet> py w1.exec_container("c1", "ping <ip> -c 5")
+mininet> py C0w1.exec_container("c1", "ping <ip> -c 5")
 ```
 Feed the ip of either another container on the same host, or a container on another host.
 
@@ -48,23 +48,23 @@ Note: `exec_container` function only returns output after the command has comple
 
 In the code, we have setup a sample service entry:
 ```
-c0.kp_vip_add("100.64.10.1", ["c2", "c3"])
+C0.kp_vip_add("100.64.10.1", ["c2", "c3"])
 ```
 
 Now, this means that you can ping and reach the 2 containers using this VIP.
 
 ```
-> py w1.exec_container("c1", "ping 100.64.10.1 -c 5")
+> py C0w1.exec_container("c1", "ping 100.64.10.1 -c 5")
 ```
 
 Check the nft counters on the worker:
 ```
-> w1 nft list ruleset
+> C0w1 nft list ruleset
 ```
 
 You can check the load-balancing effect using something like the following. Destroy the container c3 using the command:
 ```
-> py w3.delete_container("c3")
+> py C0w3.delete_container("c3")
 ```
 Now, if you keep running the ping command, you will notice that it fails every other time.
 
