@@ -1,18 +1,16 @@
-FROM ubuntu:focal
+FROM ubuntu:jammy
 MAINTAINER Chander Govindarajan
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update
-RUN apt install -y python3 mininet bridge-utils
-RUN apt install -y python3-pip
+RUN apt install -y python3 mininet bridge-utils python3-pip wget
 RUN pip3 install mininet
 
-RUN apt install -y iputils-ping traceroute nmap iperf3
-# for the killall command
-RUN apt install -y psmisc
+RUN apt install -y iputils-ping traceroute nmap iperf3 psmisc iproute2 nftables iptables \
+    && update-alternatives --set iptables /usr/sbin/iptables-nft
 
 RUN mkdir downloads
-
-RUN apt install -y wget
 
 # Obtain etcd
 RUN cd downloads \
@@ -45,8 +43,6 @@ ENV PATH $PATH:/usr/local/go/bin
 RUN go install github.com/containernetworking/cni/cnitool@latest \
     && cp ~/go/bin/cnitool /usr/local/bin
 
-RUN apt install -y iproute2 nftables iptables \
-    && update-alternatives --set iptables /usr/sbin/iptables-nft
 
 # copy in main binaries
 RUN cd downloads \
@@ -60,6 +56,59 @@ RUN mkdir -p /opt/cni/bin \
     && cp flannel-amd64 /opt/cni/bin/flannel \
     && cp bridge /opt/cni/bin/ \
     && cp host-local /opt/cni/bin/
+
+## Skupper Router related things
+# Obtain skupper source code
+RUN cd downloads \
+    && wget https://github.com/skupperproject/skupper-router/archive/refs/tags/2.1.0.tar.gz \
+    && tar -xzvf 2.1.0.tar.gz
+
+# Obtain skupper build dependencies
+RUN apt install -y cmake \
+    libqpid-proton11 libqpid-proton11-dev python3-qpid-proton \
+    libnghttp2-dev libwebsockets-dev \
+    asciidoc
+
+# Obtain qpid-proton src - needed to build skupper router
+RUN cd downloads \
+    && wget https://github.com/apache/qpid-proton/archive/main.tar.gz -O qpid-proton.tar.gz \
+    && tar -zxf qpid-proton.tar.gz --one-top-level=qpid-proton-src --strip-components 1
+
+# Build dependency needed for qpid-proton
+RUN apt install -y libssl-dev
+
+# Build qpid-proton library
+RUN cd downloads \
+    && cmake -S "qpid-proton-src" -B "proton_build" \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DRUNTIME_CHECK="${runtime_check}" \
+    -DENABLE_LINKTIME_OPTIMIZATION=ON \
+    -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
+    -DBUILD_TLS=ON -DSSL_IMPL=openssl -DBUILD_STATIC_LIBS=ON -DBUILD_BINDINGS=python -DSYSINSTALL_PYTHON=ON \
+    -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    && cmake --build "proton_build" --parallel 4 --verbose \
+    && DESTDIR="proton_install" cmake --install "proton_build"
+
+# Build skupper itself
+RUN cd downloads/skupper-router-2.1.0/ \
+    && cmake -S . -B ../skupper-router-build \
+       -DProton_USE_STATIC_LIBS=ON \
+       -DProton_DIR="../proton_install/usr/lib/cmake/Proton" \
+       -DCMAKE_INSTALL_PREFIX=/usr \
+       -DBUILD_TESTING=OFF \
+       -DVERSION=2.1.0 \
+    && cmake --build ../skupper-router-build --parallel 4 \
+    && cmake --install ../skupper-router-build
+
+# generate skupper docs
+RUN cd downloads/skupper-router-build \
+    && make docs
+# Now doc files are available in the folder /downloads/skupper-router-build/docs/man
+# Of interest is the adoc files
+
+# Needed to run skupper router
+ENV PYTHONPATH=/usr/lib/python3.10/site-packages/
 
 COPY . /simulator
 WORKDIR /simulator
