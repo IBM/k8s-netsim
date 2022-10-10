@@ -106,10 +106,8 @@ class Worker(Node):
         return self.cmd("ip netns exec {0} {1}".format(self._container_name(name), cmd))
 
     def setup_kp(self):
-        """Any prereq setup to enable kube-proxy.
-
-        We assume flannel has already setup by this time. This is super important - if this order is not followed, things won't work correctly.
-        """
+        # prepare nft chain to be used later
+        self.cmd("nft add table ip nat")
         self.cmd("nft add chain nat PREROUTING { type nat hook prerouting priority dstnat\; }")
 
     def terminate(self):
@@ -123,9 +121,67 @@ class Worker(Node):
         super(Worker, self).terminate()
 
 class Cluster():
-    def __init__(self, cluster, workers):
+    def __init__(self, cluster, numworkers=3):
         self.name = cluster
-        self.workers = workers
+        self.numworkers = numworkers
+        self.workers = []
+
+    def deriveName(self, item):
+        return "C" + self.name + item
+
+    def addTopo(self, topo):
+        # Add top level switch
+        s0 = topo.addSwitch(self.deriveName('s0'))
+
+        # Add etcd cluster
+        # hardcode IPs here so that we can refer to these in Endpoint creation
+        cluster = "%s=http://10.0.0.1:2380,%s=http://10.0.0.2:2380" % (self.deriveName("e1"), self.deriveName("e2"))
+        e1 = topo.addNode(self.deriveName('e1'), ip='10.0.0.1', cls=Etcd, cluster=cluster)
+        e2 = topo.addNode(self.deriveName('e2'), ip='10.0.0.2', cls=Etcd, cluster=cluster)
+
+        # Connect etcd nodes to top level
+        topo.addLink(e1, s0)
+        topo.addLink(e2, s0)
+
+        # Track worker names, just strings for now
+        for i in range(self.numworkers):
+            w = topo.addNode(self.deriveName('w' + str(i+1)), cls=Worker, etcd='10.0.0.1', cluster=self.name)
+            topo.addLink(w, s0)
+            self.workers.append(w)
+
+    def startup(self, net):
+        e1 = net.getNodeByName(self.deriveName("e1"))
+        e2 = net.getNodeByName(self.deriveName("e2"))
+
+        e1.start()
+        e2.start()
+
+        time.sleep(2)
+        e1.loadFlannelConf()
+
+        # replace the workers array with actual worker objects
+        worker_nodes = []
+        for w in self.workers:
+            worker_nodes.append(net.getNodeByName(w))
+        self.workers = worker_nodes
+
+        for w in self.workers:
+            w.start_flannel()
+
+        # wait for flannel configuration to propogate
+        time.sleep(1)
+
+        for w in self.workers:
+            w.setup_cni()
+            w.setup_kp()
+
+    def get(self, name):
+        for w in self.workers:
+            if w.name == self.deriveName(name):
+                return w
+
+        info("Worker with name: %s not found in cluster" % workername)
+        return None
 
     def kp_vip_add(self, vip, containers):
         """
@@ -164,29 +220,13 @@ class Cluster():
             info("Running nft cmd on %s: %s\n" % (w, w.cmd(nft_cmd)))
 
 class UnderlayTopo(Topo):
+    def __init__(self, clusters):
+        self.clusters = clusters
+        super(UnderlayTopo, self).__init__()
+
     def build(self):
-        # Add top level switch
-        s0 = self.addSwitch('s0')
-
-        # Add etcd cluster
-        # hardcode IPs here so that we can refer to these in Endpoint creation
-        cluster = "e1=http://10.0.0.1:2380,e2=http://10.0.0.2:2380"
-        e1 = self.addNode('e1', ip='10.0.0.1', cls=Etcd, cluster=cluster)
-        e2 = self.addNode('e2', ip='10.0.0.2', cls=Etcd, cluster=cluster)
-
-        # Connect etcd nodes to top level
-        self.addLink(e1, s0)
-        self.addLink(e2, s0)
-
-        # Add worker nodes
-        w1 = self.addNode('w1', cls=Worker, etcd='10.0.0.1', cluster='0')
-        w2 = self.addNode('w2', cls=Worker, etcd='10.0.0.1', cluster='0')
-        w3 = self.addNode('w3', cls=Worker, etcd='10.0.0.1', cluster='0')
-
-        # connect workers to top level
-        self.addLink(w1, s0)
-        self.addLink(w2, s0)
-        self.addLink(w3, s0)
+        for C in self.clusters:
+            C.addTopo(self)
 
 def cleanup():
     # stop running processes
@@ -209,50 +249,25 @@ def main():
     os.system('sysctl net.bridge.bridge-nf-call-iptables=0')
     os.system('sysctl net.bridge.bridge-nf-call-ip6tables=0')
 
+    C0 = Cluster(cluster="0", numworkers=3)
+    topo = UnderlayTopo([C0])
 
     # Override switch to use the simple LinuxBridge standalone without controller
     # This should not be needed, but the default ovs-testcontroller seems to be broken - aka, ping is not working
-    net = Mininet(topo=UnderlayTopo(), switch=LinuxBridge, controller=None)
+    net = Mininet(topo=topo, switch=LinuxBridge, controller=None)
     net.start()
 
-    e1 = net.getNodeByName("e1")
-    e2 = net.getNodeByName("e2")
+    C0.startup(net)
 
-    e1.start()
-    e2.start()
+    C0.get("w1").create_container("c1")
+    C0.get("w2").create_container("c2")
+    C0.get("w3").create_container("c3")
 
-    time.sleep(2)
-    e1.loadFlannelConf()
-
-    w1 = net.getNodeByName("w1")
-    w2 = net.getNodeByName("w2")
-    w3 = net.getNodeByName("w3")
-
-    w1.start_flannel()
-    w2.start_flannel()
-    w3.start_flannel()
-
-    # wait for flannel configuration to propogate
-    time.sleep(1)
-
-    w1.setup_cni()
-    w2.setup_cni()
-    w3.setup_cni()
-
-    w1.create_container("c1")
-    w2.create_container("c2")
-    w3.create_container("c3")
-
-    w1.setup_kp()
-    w2.setup_kp()
-    w3.setup_kp()
-
-    c0 = Cluster(cluster="0", workers=[w1, w2, w3])
-    c0.kp_vip_add("100.64.10.1", ["c2", "c3"])
+    C0.kp_vip_add("100.64.10.1", ["c2", "c3"])
 
     # Run a test
     print("Running connectivity test...")
-    print(w1.exec_container("c1", "ping 100.64.10.1 -c 5"))
+    print(C0.get("w1").exec_container("c1", "ping 100.64.10.1 -c 5"))
 
     CLI(net)
 
