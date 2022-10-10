@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import logging
 import os
 import time
 import json
@@ -11,6 +10,7 @@ from mininet.nodelib import LinuxBridge
 from mininet.cli import CLI
 from mininet.topo import Topo
 from mininet.link import TCLink
+from mininet.log import setLogLevel, info
 
 class Etcd(Node):
     def config(self, **params):
@@ -89,7 +89,7 @@ class Worker(Node):
         self.cmd("ip netns add {0}".format(self._container_name(name)))
         # 2. Run flannel cni in the netns
         cmd = "CNI_PATH=/opt/cni/bin NETCONFPATH=/tmp/knetsim/{0} cnitool add \"{0}\" /var/run/netns/{1}".format(self.name, self._container_name(name))
-        logging.debug(self.cmd(cmd))
+        info(self.cmd(cmd))
         # 3. Add container to list of containers
         self.containers.append(name)
 
@@ -104,6 +104,13 @@ class Worker(Node):
     def exec_container(self, name, cmd):
         # enter netns and run command
         return self.cmd("ip netns exec {0} {1}".format(self._container_name(name), cmd))
+
+    def setup_kp(self):
+        """Any prereq setup to enable kube-proxy.
+
+        We assume flannel has already setup by this time. This is super important - if this order is not followed, things won't work correctly.
+        """
+        self.cmd("nft add chain nat PREROUTING { type nat hook prerouting priority dstnat\; }")
 
     def terminate(self):
         # undo things, if needed
@@ -126,7 +133,7 @@ class Cluster():
         nft add rule ip nat PREROUTING ip daddr 100.64.10.1 dnat to numgen inc mod 2 map {0: 11.11.0.2, 1: 11.15.48.2 }
         This causes a dnat load-balanced round-robin between the provided ips, 2 in this case.
 
-        This rule is specific to the chain already created by flannel. If the CNI plugin changes, this rule will have to change. This also assumes that the container is setup with a default route to forward to host. This is only achieved with Flannel using isDefaultGateway parameter set to True to be passed onto the bridge cni plugin.
+        This rule is specific to the chain manually created in the worker using the setup_kp function. This also assumes that the container is setup with a default route to forward to host. This is only achieved with Flannel using isDefaultGateway parameter set to True to be passed onto the bridge cni plugin.
         """
 
         # 1. Lookup ips of all given containers
@@ -140,7 +147,7 @@ class Cluster():
                     # run local hostname lookup and add the obtained ip
                     ips.append(w.exec_container(c, "hostname -I").split()[0])
                     break
-        logging.debug("Looking up ips of containers: %s", ips)
+        info("Looking up ips of containers: %s\n" % ips)
 
         # 2. Generate nft rules to be programmed
         nft_map = ""
@@ -150,11 +157,11 @@ class Cluster():
             nft_map += "{0}: {1}".format(idx, ip)
         # triple curly bracked needed since we need one actual curly bracket in the output
         nft_cmd = "nft add rule ip nat PREROUTING ip daddr {0} counter dnat to numgen inc mod {1} map {{{2}}}".format(vip, len(ips), nft_map)
-        logging.debug("Generated nft command: %s", nft_cmd)
+        info("Generated nft command: %s\n" % nft_cmd)
 
         # 3. Run the nft rules on all local workers
         for w in self.workers:
-            logging.debug("Running nft cmd on %s: %s", w, w.cmd(nft_cmd))
+            info("Running nft cmd on %s: %s\n" % (w, w.cmd(nft_cmd)))
 
 class UnderlayTopo(Topo):
     def build(self):
@@ -188,9 +195,9 @@ def cleanup():
     os.system("rm -rf /tmp/knetsim/")
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    setLogLevel('info')
 
-    logging.info("Cleaning up prev run stragglers...")
+    info("Cleaning up prev run stragglers...")
     cleanup()
 
     # prepare configuration dir somewhere which is accessible
@@ -236,15 +243,23 @@ def main():
     w2.create_container("c2")
     w3.create_container("c3")
 
+    w1.setup_kp()
+    w2.setup_kp()
+    w3.setup_kp()
+
     c0 = Cluster(cluster="0", workers=[w1, w2, w3])
     c0.kp_vip_add("100.64.10.1", ["c2", "c3"])
+
+    # Run a test
+    print("Running connectivity test...")
+    print(w1.exec_container("c1", "ping 100.64.10.1 -c 5"))
 
     CLI(net)
 
     # don't need to delete_containers manually, since we have a teardown function that does it
 
     net.stop()
-    logging.info("Cleaning up loose ends...")
+    info("Cleaning up loose ends...\n")
     cleanup()
 
 if __name__ == "__main__":
