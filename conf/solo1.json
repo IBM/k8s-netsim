@@ -1,0 +1,80 @@
+[
+    [
+        "router",
+        {
+            "id": "c1",
+            "mode": "interior",
+            "helloMaxAgeSeconds": "3",
+            "metadata": "{\"id\":\"c1\",\"version\":\"1.0.2\"}"
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "amqp",
+            "host": "localhost",
+            "port": 5673
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "interior-listener",
+            "role": "inter-router",
+            "port": 55672,
+            "maxFrameSize": 16384,
+            "maxSessionFrames": 640
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "edge-listener",
+            "role": "edge",
+            "port": 45672,
+            "maxFrameSize": 16384,
+            "maxSessionFrames": 640
+        }
+    ],
+    [
+        "listener",
+        {
+            "name": "@9091",
+            "role": "normal",
+            "port": 9091,
+            "http": true,
+            "httpRootDir": "disabled",
+            "healthz": true,
+            "metrics": true
+        }
+    ],
+    [
+        "address",
+        {
+            "prefix": "mc",
+            "distribution": "multicast"
+        }
+    ],
+    [
+        "connector",
+        {
+            "name": "link1",
+            "role": "inter-router",
+            "host": "localhost",
+            "port": "55671",
+            "cost": 1,
+            "maxFrameSize": 16384,
+            "maxSessionFrames": 640
+        }
+    ],
+    [
+        "tcpConnector",
+        {
+            "name": "backend",
+            "host": "localhost",
+            "port": "8090",
+            "address": "backend:8080",
+            "siteId": "c1"
+        }
+    ]
+]
