@@ -109,3 +109,5 @@ class Cluster():
         for w in self.workers:
             info("Running nft cmd on %s: %s\n" % (w, w.cmd(nft_cmd)))
 
+    def get_skupper_host(self):
+        return self.workers[0].IP()

@@ -10,6 +10,7 @@ from mininet.link import TCLink
 from mininet.log import setLogLevel, info
 
 from core.cluster import Cluster
+from core.skupper import create_conf
 
 class UnderlayTopo(Topo):
     def __init__(self, clusters):
@@ -34,6 +35,7 @@ def main():
 
     # prepare configuration dir somewhere which is accessible
     os.system("mkdir /tmp/knetsim/")
+    os.mkdir("/tmp/knetsim/skupper")
     os.system("cp -r ./conf/ /tmp/knetsim/conf/")
 
     # Setup LinuxBridge
@@ -68,6 +70,10 @@ def main():
     print("Running connectivity test...")
     print(C0.get("w1").exec_container("c1", "ping 100.64.10.1 -c 5"))
     print(C1.get("w1").exec_container("c1", "ping 100.64.10.1 -c 5"))
+
+    # Multi-cluster networking
+    create_conf("C0")
+    create_conf("C1", [{"name": "C0", "host": C0.get_skupper_host()}])
 
     CLI(net)
 
