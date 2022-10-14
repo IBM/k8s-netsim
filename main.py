@@ -18,8 +18,9 @@ class UnderlayTopo(Topo):
         super(UnderlayTopo, self).__init__()
 
     def build(self):
+        t0 = self.addSwitch("t0")
         for C in self.clusters:
-            C.addTopo(self)
+            self.addLink(C.addTopo(self), t0)
 
 def cleanup():
     # stop running processes
@@ -74,6 +75,8 @@ def main():
     # Multi-cluster networking
     create_conf(C0)
     create_conf(C1, [C0])
+    C0.start_skupper()
+    C1.start_skupper()
 
     CLI(net)
 

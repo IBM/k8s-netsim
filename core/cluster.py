@@ -20,6 +20,8 @@ class Cluster():
         return "C" + self.name + item
 
     def addTopo(self, topo):
+        """ Return the top level switch of the cluster.
+        """
         # Add top level switch
         s0 = topo.addSwitch(self.deriveName('s0'))
 
@@ -38,6 +40,8 @@ class Cluster():
             w = topo.addNode(self.deriveName('w' + str(i+1)), cls=Worker, etcd='%s.0.1'%self.etcd_prefix, cluster=self.name)
             topo.addLink(w, s0)
             self.workers.append(w)
+
+        return s0
 
     def startup(self, net):
         e1 = net.getNodeByName(self.deriveName("e1"))
@@ -111,3 +115,10 @@ class Cluster():
 
     def get_skupper_host(self):
         return self.workers[0].IP()
+
+    def start_skupper(self):
+        cmd_t = """nohup skrouterd
+-c /tmp/knetsim/skupper/{0}.json
+> /tmp/knetsim/skupper/{0}.log &""".replace("\n", " ")
+        cmd = cmd_t.format(self.name)
+        self.workers[0].cmd(cmd)
