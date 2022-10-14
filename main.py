@@ -72,8 +72,8 @@ def main():
     print(C1.get("w1").exec_container("c1", "ping 100.64.10.1 -c 5"))
 
     # Multi-cluster networking
-    create_conf("C0")
-    create_conf("C1", [{"name": "C0", "host": C0.get_skupper_host()}])
+    create_conf(C0)
+    create_conf(C1, [C0])
 
     CLI(net)
 

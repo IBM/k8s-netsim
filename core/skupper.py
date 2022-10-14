@@ -9,32 +9,28 @@ def load_base_conf(basefile):
         return json.load(baseconf)
 
 """
-Each remote is a dict as follows
-{
-  "name": <cluster name of remote>,
-  "host": <ip of the host running the remote skupper>
-}
+Remotes is an array of other clusters
 """
-def build_conf(clustername, remotes=[]):
+def build_conf(cluster, remotes=[]):
     conf = []
 
     conf.append(["router",
-                 { "id": clustername,
+                 { "id": cluster.name,
                    "mode": "interior",
                    "helloMaxAgeSeconds": "3",
                    "metadata": str({
-                       "id": clustername,
+                       "id": cluster.name,
                        "version": "1.0.2"
                    })
                   }])
 
-    conf.append(load_base_conf("./conf/skupper_base.json"))
+    conf += load_base_conf("./conf/skupper_base.json")
 
     for r in remotes:
         link = ["connector", {
-            "name": r["name"],
+            "name": r.name,
             "role": "inter-router",
-            "host": r["host"],
+            "host": r.get_skupper_host(),
             "port": "55671",
             "cost": 1,
             "maxFrameSize": 16384,
@@ -44,7 +40,7 @@ def build_conf(clustername, remotes=[]):
 
     return conf
 
-def create_conf(clustername, remotes=[]):
-    with open("/tmp/knetsim/skupper/{0}.json".format(clustername), "w") as conffile:
-        conf = build_conf(clustername, remotes)
+def create_conf(cluster, remotes=[]):
+    with open("/tmp/knetsim/skupper/{0}.json".format(cluster.name), "w") as conffile:
+        conf = build_conf(cluster, remotes)
         json.dump(conf, conffile)
