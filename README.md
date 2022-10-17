@@ -68,6 +68,18 @@ You can check the load-balancing effect using something like the following. Dest
 ```
 Now, if you keep running the ping command, you will notice that it fails every other time.
 
+### Check Skupper powered multi-cluster connectivity
+
+In the code, a simple http server is run on a container `c4` on `w3` of the first cluster `C0`. Skupper is configured to expose this service to the other cluster `C1` on `C1w1:1028`.
+
+Note down the IP of the worker where Skupper Router is running on C1, it is "w1" with ip `10.0.0.8` in the example below.
+
+Try the following:
+```
+> py C1w1.exec_container("c1", "wget 10.0.0.8:1028")
+```
+You can run this command from any of the containers in C1.
+
 ## Troubleshooting
 
 ### Check if etcd cluster is healthy

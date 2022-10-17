@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import time
 
 from mininet.net import Mininet
 from mininet.nodelib import LinuxBridge
@@ -60,6 +61,7 @@ def main():
     C0.get("w1").create_container("c1")
     C0.get("w2").create_container("c2")
     C0.get("w3").create_container("c3")
+    C0.get("w3").create_container("c4")
     C0.kp_vip_add("100.64.10.1", ["c2", "c3"])
 
     C1.get("w1").create_container("c1")
@@ -73,10 +75,23 @@ def main():
     print(C1.get("w1").exec_container("c1", "ping 100.64.10.1 -c 5"))
 
     # Multi-cluster networking
-    create_conf(C0)
-    create_conf(C1, [C0])
+
+    # start a service in a container
+    C0.get("w3").exec_container("c4", "nohup python3 -m http.server 80 >&/dev/null &")
+    ip = C0.get("w3").exec_container("c4", "hostname -I").split()[0]
+    svcs = [{"name": "svc1", "cluster": "0", "host": ip, "port": "80", "lport": 1028}]
+
+    create_conf(C0, remotes=[], svcs=svcs)
+    create_conf(C1, [C0], svcs=svcs)
     C0.start_skupper()
     C1.start_skupper()
+
+    # allow time for skupper to stabilize
+    time.sleep(5)
+
+    print("Run multi-cluster connectivity test...")
+    ip = C1.get("w1").IP()
+    print(C1.get("w2").exec_container("c2", "wget http://{0}:{1}".format(ip, 1028)))
 
     CLI(net)
 
