@@ -9,9 +9,9 @@ A simulation of Kubernetes networking using mininet for learning and prototype p
 3. Achieve pod-pod connectivity using a real Flannel setup.
 4. Achieve pod-service connectivity, ie "kube-proxy" features using nftables.
 
-The next step for this project is to:
+Additionally, it now also has:
 
-1. Enable prototyping of multi-cluster connectivity features - simulate things like Skupper, Submariner etc.
+1. Skupper powered multi-cluster container connectivity.
 
 ## Running
 
@@ -112,6 +112,15 @@ flannel.100: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1450
         TX packets 0  bytes 0 (0.0 B)
         TX errors 0  dropped 10 overruns 0  carrier 0  collisions 0
 ```
+
+### Check if Skupper is running
+
+```
+> ps aux | grep "skupper"
+```
+should show a skupper process per cluster.
+
+You can also check the config files `/tmp/knetsim/skupper/*.json` here and the log files in the same folder.
 
 ## Known Issues
 
