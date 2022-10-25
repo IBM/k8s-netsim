@@ -1,5 +1,7 @@
 # knetsim
 
+![Architecture Schema](./imgs/schema.png)
+
 ## What?
 
 A simulation of Kubernetes networking using mininet for learning and prototype purposes.
