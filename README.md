@@ -24,7 +24,14 @@ sudo docker build -t knetsim -f ./Dockerfile .
 
 Run:
 ```
-docker run -it --privileged --rm knetsim
+docker run -i --privileged --rm knetsim
+```
+
+## Presentation:
+
+To preview:
+```
+marp -p ./presentation/presentation.md
 ```
 
 ## Checking

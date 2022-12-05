@@ -67,6 +67,7 @@ This is still an unsolved problem!
 4. Multi-cluster communication
 
 ---
+<!-- footer: C1/4: Workers and Containers, Section A: **Introduction** -->
 
 # C1: Workers and containers
 
@@ -74,7 +75,9 @@ Kubernetes clusters consist of workers, each running containers
 
 ![](https://d33wubrfki0l68.cloudfront.net/2475489eaf20163ec0f54ddc1d92aa8d4c87c96b/e7c81/images/docs/components-of-kubernetes.svg)
 
+
 ---
+<!-- footer: C1/4: Workers and Containers, Section B: **How does it work in reality?** -->
 
 # C1: How does it work?
 
@@ -85,6 +88,7 @@ Kubernetes clusters consist of workers, each running containers
 
 
 ---
+<!-- footer: C1/4: Workers and Containers, Section C: **How do we do it?** -->
 
 # C1: How do we do it?
 
@@ -106,6 +110,7 @@ Note: easy to play with network namespaces using the `ip netns` command.
 TODO
 
 ---
+<!-- footer: C1/4: Workers and Containers, Section D: **Hands on** -->
 
 # C1: Hands on
 
@@ -177,6 +182,7 @@ mininet> py C0w1.delete_container("c4")
 ```
 
 ---
+<!-- footer: Reorientation: end of chapter 1 -->
 
 # Progress so far
 
@@ -186,6 +192,7 @@ mininet> py C0w1.delete_container("c4")
 4. Multi-cluster communication
 
 ---
+<!-- footer: C2/4: Container-Container, Section A: **Introduction** -->
 
 ## C2: Container-container communication
 
@@ -193,18 +200,20 @@ TODO
 1. Aside: pods vs containers
 2. Show example of pods communicating using real k8s example
 3. Talk about needs: interface/ip has to be assigned, packets should be routed from one container to another
-4. Talk about communication between 2 containers on the same host
-5. Talk about communication between 2 containers on different workers: how does flannel, calico, ovn etc do it.
-6. Talk about what is common to these: CNI interface
-7. Details of CNI interface
 
 ---
+<!-- footer: C2/4: Container-Container, Section B: **How does it work in reality?** -->
 
 ## C2: How does it work?
 
 TODO
+1. Talk about communication between 2 containers on the same host
+2. Talk about communication between 2 containers on different workers: how does flannel, calico, ovn etc do it.
+3. Talk about what is common to these: CNI interface
+4. Details of CNI interface
 
 ---
+<!-- footer: C2/4: Container-Container, Section C: **How do we do it?** -->
 
 ## C2: How do we do it?
 
@@ -213,6 +222,7 @@ We run a real CNI plugin - flannel.
 Talk about details of how flannel works
 
 ---
+<!-- footer: C2/4: Container-Container, Section D: **Hands on** -->
 
 ## C2: Hands on :hammer:
 
@@ -236,6 +246,7 @@ TODO
 2. Change the parameters of the flannel config in `conf` folder and re-run and see the change in IPs.
 
 ---
+<!-- footer: Reorientation: end of chapter 2 -->
 
 # Progress so far
 
@@ -245,5 +256,114 @@ TODO
 4. Multi-cluster communication
 
 ---
+<!-- footer: C3/4: Services, Section A: **Introduction** -->
 
 ## C3: Service Abstraction
+
+Users consume services, not pods
+We already know about pod ips, how do services work?
+
+![bg height:400px right](https://cloudstackgroup.com/wp-content/uploads/2021/04/services.png)
+
+---
+<!-- footer: C3/4: Services, Section B: **How does it work in reality?** -->
+
+## Services: using DNS
+
+![height:600px](https://www.goglides.dev/images/r0WaTrEdTTIQJhOjqiYUT8KgS07q5dri-suEEdSYrMo/s:1000:420/mb:500000/ar:1/aHR0cHM6Ly93d3ct/Z29nbGlkZXMtZGV2/LnMzLmFtYXpvbmF3/cy5jb20vdXBsb2Fk/cy9hcnRpY2xlcy8y/bXVpOWZsZHhqOXpm/b2wzdDl5Ny5wbmc)
+
+---
+
+## Services: using kube-proxy
+
+![](https://d33wubrfki0l68.cloudfront.net/e351b830334b8622a700a8da6568cb081c464a9b/13020/images/docs/services-userspace-overview.svg)
+
+---
+<!-- footer: C3/4: Services, Section C: **How do we do it?** -->
+
+## C3: How do we do it?
+
+Using nftables
+
+---
+
+## Aside: nftables
+
++ nftables is the replacement to iptables
+
+---
+<!-- footer: C3/4: Services, Section D: **Hands on** -->
+
+## C3: Hands on
+
+In the code, we have:
+```
+C0.kp_vip_add("100.64.10.1", ["c2", "c3"])
+```
+
+This means, we can access the containers c2 and c3 using this VIP.
+
+1. Ping this virtual ip from c1 and see that it works.
+2. Delete one of the 2 containers c2/c3 and see what happens. (Hint: repeat the ping a few times)
+
+---
+
+## C3: Exercises :hammer:
+
+1. Create a few containers and expose them using a new VIP.
+2. Examine the `nft` rules added to the hosts.
+
+---
+<!-- footer: Reorientation: end of chapter 3 -->
+
+# Progress so far
+
+1. Workers and containers :heavy_check_mark:
+2. Container-Container communication :heavy_check_mark:
+3. Service abstraction :heavy_check_mark:
+4. Multi-cluster communication :arrow_left:
+
+---
+<!-- footer: C4/4: Multi-cluster, Section A: **Introduction** -->
+
+## C4: Multi-cluster communication
+
+TODO
+1. Talk about naive way of exposing services: routes/ingress, single service exposure
+2. Talk about why this won't work for generic interaction of many microservices
+
+---
+<!-- footer: C4/4: Multi-cluster, Section B: **How does it work in reality?** -->
+
+## C4: How does it work?
+
+TODO
+1. Talk about how different solutions exist: submariner, skupper, palmetto?
+2. Go into details of skupper - things like the cli command interface to link sites and expose services, the components such as skupper router etc
+
+---
+<!-- footer: C4/4: Multi-cluster, Section C: **How do we do it?** -->
+
+## C4: How do we do it?
+
+We also use skupper-router, with manual configuration.
+
+TODO
+1. Go into details about skupper router and the config file.
+
+---
+<!-- footer: C4/4: Multi-cluster, Section D: **Hands on** -->
+
+## C4: Hands on
+
+Go read line number 79-94 in `main.py`.
+
+Understand and reproduce it.
+
+---
+
+# Retrospective
+
+TODO
+1. Talk about what we have seen today.
+2. Talk about next steps.
