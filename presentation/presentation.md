@@ -1,16 +1,17 @@
-# knetsim
+# Cloud Native Networking
 
-A learning tool focused on Networking aspects of Kubernetes
+Understand the current cloud networking basics.
+Have a hands-on experience with a learning tool focused on Networking aspects of Kubernetes
 (and multi-cluster networking using Skupper)
 
 ---
 
-## What it is not 
+## Hands On Learning Tool: What it is not 
 
 1. :exclamation: a real Kubernetes setup
 2. :exclamation: a single-node k8s runner like minikube, kind
 
-## What it is
+## Hands On Learning Tool: What it is
 
 1. Mininet based simulation
 2. Uses as many real components
@@ -18,9 +19,23 @@ A learning tool focused on Networking aspects of Kubernetes
 
 ---
 
+## Refresher: Containers
+
++ Application executable packaged with its libraries and dependency
++ No separate guest OS like virtual machines
++ Light-weight and portable
++ Isolation through namespace and cgroups
+  + Namespace: isolated view of resources like file system, network resources
+  + cgroups: Resource limit per process/container  
+
+---
+
 ## What is Kubernetes?
 
-TODO
++ Docker: Single machine container deployment
++ Kubernetes: Container Orchestration 
+  + Across a cluster of machines
+  + Manage automated deployment, scaling
 
 ---
 
@@ -29,12 +44,13 @@ TODO
 + Many (many) layers and pieces
 + Continuously evolving
 + Huge ecosystem: hundreds of competing startups, open-source projects, products
++ TODO add figure
 
 ---
 
 ## What is the deal with Kubernetes networking?
 
-1. Connect containers running on different workers
+1. Connect containers running on different workers 
 2. Load balance multiple replicas as a single service
 3. Expose services by name
 4. App net features such as: rate limiting, health checks, blue-green testing
@@ -99,7 +115,7 @@ Kubernetes clusters consist of workers, each running containers
 
 # Aside: what are namespaces?
 
-TODO
+TODO: can we expand it earlier instead
 
 Note: easy to play with network namespaces using the `ip netns` command.
 
@@ -107,7 +123,8 @@ Note: easy to play with network namespaces using the `ip netns` command.
 
 # Aside: mininet
 
-TODO
++ Network Emulator
++ Network of virtual hosts, switch, links on a machine
 
 ---
 <!-- footer: C1/4: Workers and Containers, Section D: **Hands on** -->
@@ -198,8 +215,11 @@ mininet> py C0w1.delete_container("c4")
 
 TODO
 1. Aside: pods vs containers
+   + Pod: Application specific logical host.
+     group of containers with shared storage and network resources. 
 2. Show example of pods communicating using real k8s example
 3. Talk about needs: interface/ip has to be assigned, packets should be routed from one container to another
+![bg right:30% fit](../imgs/pod_container.png)
 
 ---
 <!-- footer: C2/4: Container-Container, Section B: **How does it work in reality?** -->
