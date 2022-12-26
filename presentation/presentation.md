@@ -33,20 +33,54 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
 ## What is Kubernetes?
 
 + Docker: Single machine container deployment
-+ Kubernetes: Container Orchestration 
++ Kubernetes (k8s): Container Orchestration 
   + Across a cluster of machines
   + Manage automated deployment, scaling
+![bg right:50% fit](../imgs/k8s_img_intro.png)
 
 ---
 
+## Kubernetes Overview
+
++ Pods:Application specific logical host.
+       group of containers with shared storage and network resources. 
+![bg right:50% fit](../imgs/pod_container.png)
+![bg bottom:50% fit](../imgs/pod_yml.png)
+
+---
+
+
+## Kubernetes Overview
+
++ Deployment:
+    - Manage replicas and scaling of pods (for a desired state)
+    - Group of containers with shared storage and network resources. 
+![bg right:50% fit](../imgs/deploy_yml.png)
+![bg bottom:50% fit](../imgs/deploy_get.png)
+![bg bottom:50% fit](../imgs/deploy_podget.png)
+
+---
+## Kubernetes Overview
+
++ Containers in a pod can communicate over localhost
++ Pods identified by a cluster IP.  
++ Service: 
+    - Expose an application/pod
+    - Handle multiple replica with single end point
+    - Support dynamic up/down of pods
+![bg right:50% fit](../imgs/service_yml.png)
+
+---
+
+<!---
 ## Aside: Kubernetes is a Complex Beast
 
 + Many (many) layers and pieces
 + Continuously evolving
 + Huge ecosystem: hundreds of competing startups, open-source projects, products
-+ TODO add figure
 
 ---
+-->
 
 ## What is the deal with Kubernetes networking?
 
@@ -56,6 +90,7 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
 4. App net features such as: rate limiting, health checks, blue-green testing
 
 Now, do this across multiple clusters :scream:
+![bg right:50% fit](../imgs/multi-cluster-kubernetes-architecture.png)
 
 ---
 
@@ -87,8 +122,15 @@ This is still an unsolved problem!
 
 # C1: Workers and containers
 
-Kubernetes clusters consist of workers, each running containers
-
++ Kubernetes clusters consist of workers, each running pods
++ Control Plane: Manages workers and pods scheduling, fault-tolerance
+    + `kube-apiserver`: REST based front end for k8s frontend
+    + `etcd`: highly-available key value store for backing k8s data
++ Node Components:
+    + `kubelet`: runs on every node to ensure containers are in running state
+    + `kube-proxy`: Maintains network rules on a node.
+                    Leverages system packet filtering layer if available 
+    + `container runtime`: software for running containers. e.g. `containerd`, `docker`
 ![](https://d33wubrfki0l68.cloudfront.net/2475489eaf20163ec0f54ddc1d92aa8d4c87c96b/e7c81/images/docs/components-of-kubernetes.svg)
 
 
@@ -116,6 +158,12 @@ Kubernetes clusters consist of workers, each running containers
 # Aside: what are namespaces?
 
 TODO: can we expand it earlier instead
+Kernel namespaces:
+- user namespace: process can have `root` privilege within its user namespace
+- process ID (PID) namespace: Have PIDs in namespace that are independent of other namespaces.
+- network namespace: have an independent network stack (with routing rules, IP address 
+- mount namespace: have moubt points without effecting host filesystem
+- IPC naespace, UTS namespace
 
 Note: easy to play with network namespaces using the `ip netns` command.
 
@@ -219,7 +267,6 @@ TODO
      group of containers with shared storage and network resources. 
 2. Show example of pods communicating using real k8s example
 3. Talk about needs: interface/ip has to be assigned, packets should be routed from one container to another
-![bg right:30% fit](../imgs/pod_container.png)
 
 ---
 <!-- footer: C2/4: Container-Container, Section B: **How does it work in reality?** -->
@@ -387,3 +434,11 @@ Understand and reproduce it.
 TODO
 1. Talk about what we have seen today.
 2. Talk about next steps.
+
+---
+
+# References
+
+- https://kubernetes.io/docs/
+- https://www.redhat.com/architect/multi-cluster-kubernetes-architecture
+- https://www.nginx.com/blog/what-are-namespaces-cgroups-how-do-they-work/
