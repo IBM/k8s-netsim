@@ -261,32 +261,205 @@ mininet> py C0w1.delete_container("c4")
 
 ## C2: Container-container communication
 
-TODO
-1. Aside: pods vs containers
-   + Pod: Application specific logical host.
-     group of containers with shared storage and network resources. 
-2. Show example of pods communicating using real k8s example
-3. Talk about needs: interface/ip has to be assigned, packets should be routed from one container to another
++ For the moment, assume 2 services both have one replicas each
++ 2 pods need to communicate
++ Pod: group of containers with shared storage and network resources. 
+
+![bg right:45% fit](../imgs/pod_container.png)
 
 ---
 <!-- footer: C2/4: Container-Container, Section B: **How does it work in reality?** -->
 
 ## C2: How does it work?
 
-TODO
-1. Talk about communication between 2 containers on the same host
-2. Talk about communication between 2 containers on different workers: how does flannel, calico, ovn etc do it.
-3. Talk about what is common to these: CNI interface
-4. Details of CNI interface
+In brief:
++ The network namespace of the container is assigned an interface (eg eth0)
++ A pod is assigned an IP
++ Packets from one pod needs to be routed to another pod
+
+![bg right:30% fit](https://miro.medium.com/max/1400/1*ZdgIoY6tuOqK-r6wgL7d5A.png)
+
+---
+
+## C2: Pods on the same host
+
++ Docker also needs the same setup
++ Routing is much easier with a L2 bridge
+
+**But what about pods across 2 workers?**
+
+![bg right:50% fit](https://miro.medium.com/max/1400/1*ZdgIoY6tuOqK-r6wgL7d5A.png)
+
+
+---
+
+## C2: Need for CNI
+
++ Many different ways:
+  - Tunnel overlays like VXLAN (underlying network is unaware)
+  - Plain routing like BGP
+  
++ Challenges:
+  - Different techniques for different clusters
+  - Pods keep changing
+
+![bg right:40% fit](https://miro.medium.com/max/1400/1*1f98Bf_2yoggG_skjqTC6g.png)
+
+---
+
+## CNI: Container Networking Interface
+
+![w:100](https://www.cni.dev/img/logos/cni-horizontal-color.png)
+
++ Standard interface to manage container networking
++ Different "plugins" that conform to the spec
+
+![bg right:40% fit](https://miro.medium.com/max/1050/1*gYqKRBOFfhdZW6Li63kLaw.png)
+
+---
+
+## Some CNI plugins
+
+Out of the box plugins: bridge, ipvlan, macvlan, dhcp
+A lot of other plugins:
+![w:200](https://seeklogo.com/images/C/cilium-logo-B9B53FC8EA-seeklogo.com.png)
+![w:200](data:image/jpeg;base64,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)
+![w:200](data:image/png;base64,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)
+
+---
+
+## Plugin Classification
+
++ Interface plugins: create interface for containers
++ IP Address Management (IPAM) plugins: allocate IP address for a container
++ Meta plugins: portmap, firewall etc
+
+Can chain any number of plugins one after another.
+
+---
+
+## Spec
+
+Spec: https://www.cni.dev/docs/spec/
+
+A plugin must be called with the following env variables:
++ COMMAND: ADD, DEL, CHECK, VERSION
++ CONTAINERID: id of the container
++ NETNS: path to the net namespace of the container (eg. /run/netns/namespace1)
++ IFNAME: name of intf to create inside the container
++ ARGS: extra args
++ PATH: where to search for the plugin 
+
+---
+
+## Example configuration
+
+```
+{
+    "cniVersion": "1.0.0",
+    "name": "dbnet",
+    "type": "bridge",
+    "bridge": "cni0",
+    "keyA": ["some more", "plugin specific", "configuration"],
+    "ipam": {
+        "type": "host-local",
+        "subnet": "10.1.0.0/16",
+        "gateway": "10.1.0.1"
+    },
+    "dns": {
+        "nameservers": [ "10.1.0.1" ]
+    }
+}
+```
 
 ---
 <!-- footer: C2/4: Container-Container, Section C: **How do we do it?** -->
 
 ## C2: How do we do it?
 
-TODO
-We run a real CNI plugin - flannel.
-Talk about details of how flannel works
+2 aspects to it:
++ The CNI plugin - flannel
++ Who calls the CNI plugin? (since we dont have a real k8s runtime)
+
+---
+
+## cnitool
+
++ Development tool that allows you to run cni plugins for a namespace
++ See: https://www.cni.dev/docs/cnitool/
+```
+CNI_PATH=/opt/cni/bin 
+NETCONFPATH=/tmp/knetsim/<name> 
+cnitool add|del <name> /var/run/netns/<nsname>
+```
+---
+
+## Flannel
+
+How do we run it?
++ A `flanneld` binary running per worker connected to an etcd cluster for the k8s cluster
+  - etcd is a key-value store
+  - k8s comes with its own etcd setup
++ The `flannel` CNI plugin available on each worker to be called by `cnitool` whenever containers go up/down
+
+---
+
+## Startup sequence
+
++ Cluster level configuration loaded into etcd first 
++ Bring up flannel daemons on each workers
++ Setup CNI configuration to be used for container creation on all workers
++ Create containers
+
+---
+
+## Working
+
+![](https://cdn.jsdelivr.net/gh/b0xt/sobyte-images1/2022/07/16/faa85297f8054a7b892130fbc8b1ed57.png)
+
+---
+
+## Top level configuration
+
+Loaded into etcd from `./conf/flannel-network-config.json`:
+```
+{
+    "Network": "11.0.0.0/8",
+    "SubnetLen": 20,
+    "SubnetMin": "11.10.0.0",
+    "SubnetMax": "11.99.0.0",
+    "Backend": {
+        "Type": "vxlan",
+        "VNI": 100,
+        "Port": 8472
+    }
+}
+```
+
+---
+
+## Per node generated subnet configuration
+
+Autogenerated by the flannel daemon on each worker:
+```
+FLANNEL_NETWORK=11.0.0.0/8
+FLANNEL_SUBNET=11.10.128.1/20
+FLANNEL_MTU=1450
+FLANNEL_IPMASQ=false
+```
+---
+
+## CNI configuration
+
+```
+{
+  "name": "C0w1", 
+  "type": "flannel", 
+  "subnetFile": "/tmp/knetsim/C0w1/flannel-subnet.env", 
+  "dataDir": "/tmp/knetsim/C0w1/flannel",
+  "delegate": {"isDefaultGateway": true}
+}
+```
 
 ---
 <!-- footer: C2/4: Container-Container, Section D: **Hands on** -->
