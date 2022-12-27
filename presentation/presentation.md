@@ -519,17 +519,163 @@ We already know about pod ips, how do services work?
 ![](https://d33wubrfki0l68.cloudfront.net/e351b830334b8622a700a8da6568cb081c464a9b/13020/images/docs/services-userspace-overview.svg)
 
 ---
+
+## Kubeproxy
+
+![height:600px](https://miro.medium.com/max/1200/0*BudaotV33c7o59OS)
+
+---
 <!-- footer: C3/4: Services, Section C: **How do we do it?** -->
 
 ## C3: How do we do it?
 
-Using nftables
+Using nftables to program static DNAT rules
 
 ---
 
 ## Aside: nftables
 
 + nftables is the replacement to iptables
+
+![w:1000px](https://ungleich.ch/media/filer_public_thumbnails/filer_public/03/c3/03c37b7c-259a-478c-9c56-fcd5bdb77aef/iptables-vs-nftables.jpg__1385x740_q85_crop_subsampling-2_upscale.jpg)
+
+---
+
+## Landscape
+
+![w:700px](https://blog.cloudflare.com/content/images/2021/12/image2-13.png)
+
+---
+
+## Hook points
+
+![w:1000px](https://people.netfilter.org/pablo/nf-hooks.png)
+
+---
+
+## Mini `nftables` tutorial
+
+Let us run a new container for this experiment:
+```
+docker run -it --privileged --rm --entrypoint bash knetsim
+```
+
+Check the rules (will be empty):
+```
+nft list ruleset
+```
+
+Use this reference: https://wiki.nftables.org/wiki-nftables/index.php/Main_Page
+(Go to the Basic Operations section)
+
+---
+
+## Creating a table
+
+```
+nft add table ip filter
+nft list ruleset # or
+nft list table filter
+```
+
+Table family types: ip, arp, ip6, bridge, inet, netdev
+
+---
+
+## Creating a chain
+
+```
+nft add chain ip filter output { type filter hook output priority 0 \; policy accept \; }
+nft list ruleset
+```
+
++ ip refers to the table family
++ filter refers to the table we just created
++ output is the name of the new chain
+
++ type is one of `filter`, `route` or `nat`
+
+---
+
+## Creating a rule
+
+```
+nft add rule ip filter output ip daddr 8.8.8.8 counter
+nft list ruleset
+```
++ You can match based on anything in the packet. Check: https://wiki.nftables.org/wiki-nftables/index.php/Quick_reference-nftables_in_10_minutes#Matches
++ `counter` is a statement
+
+--- 
+
+## What can you do with Rule statements?
+
++ Verdict statements: `accept`, `drop`, `queue` (to userspace), `continue`, `return`, `jump`, `goto`
++ `counter`
++ `limit`: rate limiting
++ `nat`: dnat to or snat to
+
+Refer to: https://wiki.nftables.org/wiki-nftables/index.php/Quick_reference-nftables_in_10_minutes#Statements
+
+---
+
+## Testing our rule
+
+Counters should be empty:
+```
+nft list ruleset
+```
+
+Send a single packet:
+```
+ping -c 1 8.8.8.8
+```
+
+Counter should now be incremented:
+```
+nft list ruleset
+```
+
+---
+
+## Cleaning up
+
+Using handles to delete rules
+
+```
+nft -a list ruleset
+nft delete rule ip filter output handle #handleno
+nft list ruleset
+```
+
+```
+nft delete chain ip filter output
+nft delete table ip filter
+```
+
+Exit the container.
+
+---
+## Other useful features
+
++ Intervals: `192.168.0.1-192.168.0.250`, `nft add rule filter input tcp ports 1-1024 drop`
++ Concatenations (`.` syntax)
++ Math operations: hashing, number series generators
++ Sets and Maps (with Named variants)
++ Quotas: a rule which will only match until a number of bytes have passed
++ Flowtables: net stack bypass
+
+---
+
+## Nft summary
+
++ A better `iptables`
++ tables -> chains -> rules
++ Chains have to be created for a purpose: `filter`, `route` or `nat`
++ Rules can have statements:
+  - Verdict statements: `accept`, `drop`, `jump` etc
+  - `counter`, `limit`, `nat`
++ A lot of other handy features
 
 ---
 <!-- footer: C3/4: Services, Section D: **Hands on** -->
