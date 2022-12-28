@@ -714,18 +714,136 @@ This means, we can access the containers c2 and c3 using this VIP.
 
 ## C4: Multi-cluster communication
 
-TODO
-1. Talk about naive way of exposing services: routes/ingress, single service exposure
-2. Talk about why this won't work for generic interaction of many microservices
+We have seen how containers and services within a cluster communicate.
+
+**What about services across clusters?**
+
+---
+
+## Exposing services
+
++ Ingress
+
+![bg right:60% h:600px](https://banzaicloud.com/blog/k8s-ingress/ingress-fanout.png)
+
+---
+
+## Sharded workloads
+
+![bg right:70% contain](https://images.prismic.io/qovery/cb378e3b-f599-4e23-b628-e9b02255d5d2_Multi-Cluster.webp?auto=compress,format)
+
+---
+
+## Why Multi-cluster?
+
++ Same provider: different zones, data centers
++ Different providers: multi-cloud, hybrid-cloud, edge/telco clouds
+
+---
+
+## Multi-cloud
+
+![h:600px](../imgs/multi-cloud.png)
+
+---
+
+## Hybrid-cloud
+
++ Connect public-cloud deployments with on-prem enterprise data centers
+  - Allows cloud transformation journey
++ Allows mix and match of legacy applications with new apps
++ Allows moving workloads from on-prem to clouds (and vice-versa) as situation changes 
+
+---
+
+## Edge clouds
+
+![](https://www.researchgate.net/publication/47697299/figure/fig2/AS:651186889846792@1532266461375/Edge-Cloud-based-next-generation-Internet-architecture.png)
+
+---
+
+## Multi-cluster Networking Requirements
+
++ Allow containers/servers to talk across clusters
++ Features:
+  - Routing: how to find the pathway from a container to another
+  - Management: adding/removing clusters, pods, services
+  - Security: encryption of cross-cluster traffic
+  - Policies: which apps can talk to which other apps
++ These are features required for within cluster too - but a number of solutions exist for this
 
 ---
 <!-- footer: C4/4: Multi-cluster, Section B: **How does it work in reality?** -->
 
 ## C4: How does it work?
 
-TODO
-1. Talk about how different solutions exist: submariner, skupper, palmetto?
-2. Go into details of skupper - things like the cli command interface to link sites and expose services, the components such as skupper router etc
+It doesn't yet!
+
++ Active area of research - not solved yet
++ Some existing solutions: Cilium Multi-cluster, Istio/Consul Multi-cluster, Submariner, Skupper
++ Each solution trade-offs various aspects
++ IBM is working on a product
+
+---
+
+## Skupper
+
+![w:100px](https://skupper.io/images/skupper-logo.svg)
+
++ Layer 7 service interconnect
++ Open-source project: skupper.io
+
+Let's go into some details.
+
+---
+
+## Skupper Overview
+
+![h:600px](https://skupper.io/images/hello-world-entities.svg)
+
+---
+
+## Skupper Usuage
+
+Linking sites:
+```
+skupper init
+# on one end
+skupper token create site1.token
+# on the other end
+skupper link create site1.token
+```
+
+Exposing a service:
+```
+skupper expose deployment/backend --port 8080
+```
+
+---
+
+## Message pattern
+
++ Any number of services communicate over the same skupper router
+
+![bg right:60% contain](https://github.com/skupperproject/skupper-example-hello-world/raw/main/images/sequence.svg)
+
+---
+
+## How does it work?
+
++ Based on the AMQP Messaging queue system
++ Skupper Routers are modified Qpid Dispatch Routers
+
+![bg right:60% fit](https://thecustomizewindows.com/wp-content/uploads/2014/07/amqp-Advanced-Message-Queuing-Protocol.png)
+
+---
+
+## Skupper in Kubernetes
+
+A bit more complicated:
++ Skupper Router to do the actual routing
++ Site-Controller: to manage the links between various clusters
++ Service-Controller: to manage services as they come up/down
 
 ---
 <!-- footer: C4/4: Multi-cluster, Section C: **How do we do it?** -->
@@ -733,9 +851,90 @@ TODO
 ## C4: How do we do it?
 
 We also use skupper-router, with manual configuration.
+Let us look at how the config file looks like.
+(Example is available in `conf/` folder as `solo0.json` and `solo1.json`)
 
-TODO
-1. Go into details about skupper router and the config file.
+---
+
+### Left side
+
+```
+        "router", {
+            "id": "c0",
+            "mode": "interior",
+            ...
+        }
+```
+
+```
+        "listener", {
+            "name": "interior-listener",
+            "role": "inter-router",
+            "port": 55671,
+            "maxFrameSize": 16384,
+            "maxSessionFrames": 640
+        }
+```
+
+---
+
+### Right side
+
+```
+        "router",
+        {
+            "id": "c1",
+            "mode": "interior",
+            ...
+        }
+```
+
+```
+        "connector",
+        {
+            "name": "link1",
+            "role": "inter-router",
+            "host": "localhost",
+            "port": "55671",
+            "cost": 1,
+            "maxFrameSize": 16384,
+            "maxSessionFrames": 640
+        }
+
+```
+
+---
+
+## Service Management
+
+```
+        "tcpListener",
+        {
+            "name": "backend:8080",
+            "port": "1028",
+            "address": "backend:8080",
+            "siteId": "c0"
+        }
+```
+
+```
+        "tcpConnector",
+        {
+            "name": "backend",
+            "host": "localhost",
+            "port": "8090",
+            "address": "backend:8080",
+            "siteId": "c1"
+        }
+```
+
+---
+
+## How do we do it?
+
+1. Generate conf json files based on user provided list of services to expose.
+2. Run one `skupper-router` in each cluster on worker0.
+3. Containers in the cluster should connect to the skupper-router at a particular port for a given service.
 
 ---
 <!-- footer: C4/4: Multi-cluster, Section D: **Hands on** -->
@@ -745,6 +944,7 @@ TODO
 Go read line number 79-94 in `main.py`.
 
 Understand and reproduce it.
+Examine the generated conf files in `/tmp/knetsim/skupper` folder.
 
 ---
 
