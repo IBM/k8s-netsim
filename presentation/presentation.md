@@ -573,9 +573,9 @@ Use this reference: https://wiki.nftables.org/wiki-nftables/index.php/Main_Page
 ## Creating a table
 
 ```
-nft add table ip filter
+nft add table ip table1
 nft list ruleset # or
-nft list table filter
+nft list table table1
 ```
 
 Table family types: ip, arp, ip6, bridge, inet, netdev
@@ -585,13 +585,13 @@ Table family types: ip, arp, ip6, bridge, inet, netdev
 ## Creating a chain
 
 ```
-nft add chain ip filter output { type filter hook output priority 0 \; policy accept \; }
+nft add chain ip table1 chain1 { type filter hook output priority 0 \; policy accept \; }
 nft list ruleset
 ```
 
-+ ip refers to the table family
-+ filter refers to the table we just created
-+ output is the name of the new chain
++ ip refers to the table family (can be omitted)
++ table1 refers to the table we just created
++ chain1 is the name of the new chain
 
 + type is one of `filter`, `route` or `nat`
 
@@ -600,7 +600,7 @@ nft list ruleset
 ## Creating a rule
 
 ```
-nft add rule ip filter output ip daddr 8.8.8.8 counter
+nft add rule ip table1 chain1 ip daddr 8.8.8.8 counter
 nft list ruleset
 ```
 + You can match based on anything in the packet. Check: https://wiki.nftables.org/wiki-nftables/index.php/Quick_reference-nftables_in_10_minutes#Matches
@@ -644,13 +644,13 @@ Using handles to delete rules
 
 ```
 nft -a list ruleset
-nft delete rule ip filter output handle #handleno
+nft delete rule ip table1 chain1 handle #handleno
 nft list ruleset
 ```
 
 ```
-nft delete chain ip filter output
-nft delete table ip filter
+nft delete chain ip table1 chain1
+nft delete table ip table1
 ```
 
 Exit the container.
