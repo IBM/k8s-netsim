@@ -1,3 +1,8 @@
+---
+theme: default
+paginate: true
+---
+
 # Cloud Native Networking
 
 Understand the current cloud networking basics.
@@ -1100,10 +1105,31 @@ There are other solutions in the market (including our own!)
 ---
 ## Bonus round: Service Meshes
 
-TODO
-1. What are service meshes? What are the common features?
-2. How does Istio work?
-3. How is Istio extended for multi-cluster
+- Mesh of services
+- Sidecars to manage service-service communication
+- Handle:
+  - service discovery
+  - TLS certificate issuing
+  - metrics aggregation
+![](https://www.redhat.com/cms/managed-files/microservices-1680.png)
+![bg right:50% fit](https://www.redhat.com/cms/managed-files/service-mesh-1680.png)
+
+---
+
+## Istio Service Mesh
+
+- load balancing, service-to-service authentication, and monitoring – with few or no service code changes
+
+![bg right:50% fit](https://istio.io/latest/img/service-mesh.svg)
+
+---
+
+## Multi-cluster Istio 
+   (https://istio.io/v1.2/docs/concepts/multicluster-deployments/)
+    - Multiple control plane topology
+    - Single-network shared control plane
+    - Multi-network shared control plane: using istio gateways
+    - Summary: tight coupling across clusters
 
 ---
 <!-- footer: Retrospective -->
@@ -1125,8 +1151,9 @@ What did we learn today?
 
 1. Setup and configure your own kubernetes clusters more confidently
 2. Be able to compare and select CNI plugin solutions like Calico, Cilium
+3. Extend CNI functionalities
 3. Understand the CNCF networking landscape and how things fit with each other
-4. Plan multi-cluster deployments
+4. Plan multi-cluster/edge deployments
 
 And of course,
 **Conduct research in the exciting space of cloud-native networking**
