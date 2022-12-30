@@ -110,6 +110,10 @@ RUN cd downloads/skupper-router-build \
 # Needed to run skupper router
 ENV PYTHONPATH=/usr/lib/python3.10/site-packages/
 
+RUN apt-get install -y tcpdump
+RUN apt-get install -y tshark
+RUN apt-get install -y less
+
 COPY . /simulator
 WORKDIR /simulator
 

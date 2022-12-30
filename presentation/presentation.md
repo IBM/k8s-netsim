@@ -576,11 +576,42 @@ FLANNEL_IPMASQ=false
 
 ---
 
-## C2: Hands on
+## C2: Hands on :hammer:
 
-TODO
-1. Add diagram of the traffic flow from c1 to c2.
-2. Examine these hook points using some commands.
+The traffic flow here is: c1 > host bridge > vxlan tunnel > host bridge > c2
+Let us trace the flow of the ping.
+
+To obtain pid of worker processes:
+```
+ps aux | grep "mininet" 
+```
+
+To run a command in a particular network namespace (using pid of worker nodes):
+```
+nsenter --net -t <pid> bash
+```
+
+To check for icmp packets on an intf:
+```
+tcpdump -i <intf> icmp
+```
+Check the bridge interfaces "flannel.100" on both hosts.
+
+---
+
+## C2: Hands on :hammer:
+
+To check for packets on the vxlan port:
+```
+tcpdump port 8472
+```
+
+But, how to confirm if this is indeed VXLAN?
+
+Use tshark protocol decoding:
+```
+tshark -V -d udp.port==8472,vxlan port 8472 |& less
+```
 
 ---
 
