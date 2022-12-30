@@ -136,3 +136,7 @@ You can also check the config files `/tmp/knetsim/skupper/*.json` here and the l
 ### Pinging containers from workers shuts down Flannel
 
 After the first ping from the worker, the Flannel daemon just stops running breaking everything. Not sure why this is the case. Anyhow, it is recommended to only run interactions from within containers.
+
+## License
+
+Apache-2.0
