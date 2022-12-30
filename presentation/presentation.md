@@ -43,21 +43,23 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
 ## Kubernetes Overview
 
 + Pods:Application specific logical host.
-       group of containers with shared storage and network resources. 
-![bg right:50% fit](../imgs/pod_container.png)
-![bg bottom:50% fit](../imgs/pod_yml.png)
+  - group of containers with shared storage and network resources. 
+
+![](../imgs/pod_container.png)
+![bg right:50% fit](../imgs/pod_yml.png)
 
 ---
 
 
-## Kubernetes Overview
+## Kubernetes Overview: Deployment
 
-+ Deployment:
-    - Manage replicas and scaling of pods (for a desired state)
-    - Group of containers with shared storage and network resources. 
+- Manage replicas and scaling of pods (for a desired state)
+- Group of containers with shared storage and network resources. 
+
+![](../imgs/deploy_get.png)
+![](../imgs/deploy_podget.png)
+
 ![bg right:50% fit](../imgs/deploy_yml.png)
-![bg bottom:50% fit](../imgs/deploy_get.png)
-![bg bottom:50% fit](../imgs/deploy_podget.png)
 
 ---
 ## Kubernetes Overview
@@ -68,7 +70,17 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
     - Expose an application/pod
     - Handle multiple replica with single end point
     - Support dynamic up/down of pods
+
 ![bg right:50% fit](../imgs/service_yml.png)
+
+---
+## Mini demo: k8s hands on :hammer:
+
+Get yourself a temporary k8s instance here:
+https://kubernetes.io/docs/tutorials/kubernetes-basics/deploy-app/deploy-interactive/
+
+Follow the instructions here:
+https://kubebyexample.com/concept/deployments
 
 ---
 
@@ -90,7 +102,7 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
 4. App net features such as: rate limiting, health checks, blue-green testing
 
 Now, do this across multiple clusters :scream:
-![bg right:50% fit](../imgs/multi-cluster-kubernetes-architecture.png)
+![bg right:40% fit](../imgs/multi-cluster-kubernetes-architecture.png)
 
 ---
 
@@ -110,6 +122,26 @@ This is still an unsolved problem!
 
 ---
 
+# Setup
+
+Either build the image:
+```
+docker build -t knetsim -f ./Dockerfile .
+```
+
+or pull the image:
+```
+docker pull ghcr.io/IBM/k8s-netsim:master
+docker tag k8s-netsim:master knetsim
+```
+
+To run the container:
+```
+docker run -it --privileged --rm --entrypoint bash knetsim
+```
+
+---
+
 # Structure
 
 1. Workers and containers :arrow_left:
@@ -119,6 +151,10 @@ This is still an unsolved problem!
 
 ---
 <!-- footer: C1/4: Workers and Containers, Section A: **Introduction** -->
+
+![](https://d33wubrfki0l68.cloudfront.net/2475489eaf20163ec0f54ddc1d92aa8d4c87c96b/e7c81/images/docs/components-of-kubernetes.svg)
+
+---
 
 # C1: Workers and containers
 
@@ -131,8 +167,7 @@ This is still an unsolved problem!
     + `kube-proxy`: Maintains network rules on a node.
                     Leverages system packet filtering layer if available 
     + `container runtime`: software for running containers. e.g. `containerd`, `docker`
-![](https://d33wubrfki0l68.cloudfront.net/2475489eaf20163ec0f54ddc1d92aa8d4c87c96b/e7c81/images/docs/components-of-kubernetes.svg)
-
+    
 
 ---
 <!-- footer: C1/4: Workers and Containers, Section B: **How does it work in reality?** -->
@@ -155,43 +190,112 @@ This is still an unsolved problem!
 
 ---
 
-# Aside: what are namespaces?
+# What are namespaces?
 
-TODO: can we expand it earlier instead
-Kernel namespaces:
+Kernel namespaces allow isolation of resources.
+
 - user namespace: process can have `root` privilege within its user namespace
 - process ID (PID) namespace: Have PIDs in namespace that are independent of other namespaces.
-- network namespace: have an independent network stack (with routing rules, IP address 
+- network namespace: have an independent network stack (with routing rules, IP address)
 - mount namespace: have moubt points without effecting host filesystem
-- IPC naespace, UTS namespace
+- IPC namespace, UTS namespace
 
-Note: easy to play with network namespaces using the `ip netns` command.
 
 ---
 
-# Aside: mininet
+## Example of pid namespacing
+
+![bg right:50%](https://rtfm.co.ua/wp-content/uploads/2018/03/pid-namespaces.png)
+
+---
+
+## Example of networking namespacing
+
+![bg right:50% fit](https://blog.quarkslab.com/resources/2021-10-27-namespaces/r5PvRzu.png)
+
+---
+
+## Mini demo: `ip netns` :hammer:
+
+Can use the `ip netns` command to create network namespaces.
+
+Create a new container to play with:
+```
+docker run -it --privileged --rm --entrypoint bash knetsim
+```
+
+Check the root namespace:
+```
+ifconfig
+```
+
+List namespace:
+```
+ip netns list
+```
+(should come up empty)
+
+---
+
+## Creating a new net ns :hammer:
+
+Create it:
+```
+ip netns add myns
+```
+
+It will currently be empty:
+```
+ip netns exec myns ifconfig
+```
+
+Create a new link:
+```
+ip netns exec myns ip link set lo up
+```
+
+---
+
+## Hands on :hammer:
+
+Ping localhost both in the root namespace and the newly created net namespace.
+Verify that the counters reported by `ifconfig` are independent.
+
+---
+
+## Cleaning up :hammer:
+
+Delete the ns:
+```
+ip netns del myns
+```
+
+(Delete the container too)
+
+---
+
+# What is mininet?
 
 + Network Emulator
 + Network of virtual hosts, switch, links on a machine
 
+![](http://mininet.org/images/frontpage_diagram.png)
+
 ---
 <!-- footer: C1/4: Workers and Containers, Section D: **Hands on** -->
 
-# C1: Hands on
+# Our Topology
 
-Build the image:
-```
-sudo docker build -t knetsim -f ./Dockerfile .
-```
+![bg right:70% fit](../imgs/schema.png)
+
+---
+
+## C1: Hands on 
 
 Run the simulator:
 ```
 docker run -it --privileged --rm knetsim
 ```
-
----
-
-## Verify if everything is working
 
 ```
 *** Creating network
@@ -724,7 +828,7 @@ We have seen how containers and services within a cluster communicate.
 
 + Ingress
 
-![bg right:60% h:600px](https://banzaicloud.com/blog/k8s-ingress/ingress-fanout.png)
+![bg right:70% fit](https://d33wubrfki0l68.cloudfront.net/36c8934ba20b97859854610063337d2072ea291a/28e8b/docs/images/ingressfanout.svg)
 
 ---
 
@@ -764,7 +868,7 @@ We have seen how containers and services within a cluster communicate.
 
 ## Multi-cluster Networking Requirements
 
-+ Allow containers/servers to talk across clusters
++ Allow containers/services to talk across clusters
 + Features:
   - Routing: how to find the pathway from a container to another
   - Management: adding/removing clusters, pods, services
@@ -803,7 +907,7 @@ Let's go into some details.
 
 ---
 
-## Skupper Usuage
+## Skupper Usage
 
 Linking sites:
 ```
@@ -946,13 +1050,55 @@ Go read line number 79-94 in `main.py`.
 Understand and reproduce it.
 Examine the generated conf files in `/tmp/knetsim/skupper` folder.
 
+![bg right:50% fit](../imgs/schema.png)
+
 ---
+
+## Skupper: benefits and limitations
+
+Pros:
++ Allow any number of services to talk across clusters with a single port exposed
++ Provides encryption for cross-service links
+
+Cons:
+1. Not efficient: in terms of performance overheads
+2. No provision for fine-grained policies 
+
+There are other solutions in the market (including our own!)
+
+---
+## Bonus round: Service Meshes
+
+TODO
+1. What are service meshes? What are the common features?
+2. How does Istio work?
+3. How is Istio extended for multi-cluster
+
+---
+<!-- footer: Retrospective -->
 
 # Retrospective
 
-TODO
-1. Talk about what we have seen today.
-2. Talk about next steps.
+What did we learn today?
+
+1. About the various layers in Kubernetes networking:
+  + Network namespaces
+  + Pod-pod communications: CNI spec and CNI plugins
+  + Service abstraction using `kube-proxy`
+2. Intro to the world of multi-cluster networking
+  + Saw how Skupper works in connecting clusters
+  
+---
+
+# What next?
+
+1. Setup and configure your own kubernetes clusters more confidently
+2. Be able to compare and select CNI plugin solutions like Calico, Cilium
+3. Understand the CNCF networking landscape and how things fit with each other
+4. Plan multi-cluster deployments
+
+And of course,
+**Conduct research in the exciting space of cloud-native networking**
 
 ---
 
