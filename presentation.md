@@ -41,7 +41,7 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
 + Kubernetes (k8s): Container Orchestration 
   + Across a cluster of machines
   + Manage automated deployment, scaling
-![bg right:50% fit](../imgs/k8s_img_intro.png)
+![bg right:50% fit](./imgs/k8s_img_intro.png)
 
 ---
 
@@ -50,8 +50,8 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
 + Pods:Application specific logical host.
   - group of containers with shared storage and network resources. 
 
-![](../imgs/pod_container.png)
-![bg right:50% fit](../imgs/pod_yml.png)
+![](./imgs/pod_container.png)
+![bg right:50% fit](./imgs/pod_yml.png)
 
 ---
 
@@ -61,10 +61,10 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
 - Manage replicas and scaling of pods (for a desired state)
 - Group of containers with shared storage and network resources. 
 
-![](../imgs/deploy_get.png)
-![](../imgs/deploy_podget.png)
+![](./imgs/deploy_get.png)
+![](./imgs/deploy_podget.png)
 
-![bg right:50% fit](../imgs/deploy_yml.png)
+![bg right:50% fit](./imgs/deploy_yml.png)
 
 ---
 ## Kubernetes Overview
@@ -76,7 +76,7 @@ Have a hands-on experience with a learning tool focused on Networking aspects of
     - Handle multiple replica with single end point
     - Support dynamic up/down of pods
 
-![bg right:50% fit](../imgs/service_yml.png)
+![bg right:50% fit](./imgs/service_yml.png)
 
 ---
 ## Mini demo: k8s hands on :hammer:
@@ -107,7 +107,7 @@ https://kubebyexample.com/concept/deployments
 4. App net features such as: rate limiting, health checks, blue-green testing
 
 Now, do this across multiple clusters :scream:
-![bg right:40% fit](../imgs/multi-cluster-kubernetes-architecture.png)
+![bg right:40% fit](./imgs/multi-cluster-kubernetes-architecture.png)
 
 ---
 
@@ -291,7 +291,7 @@ ip netns del myns
 
 # Our Topology
 
-![bg right:70% fit](../imgs/schema.png)
+![bg right:70% fit](./imgs/schema.png)
 
 ---
 
@@ -314,7 +314,7 @@ mininet>
 
 ## Workers 
 
-![bg right:30% fit](../imgs/schema.png)
+![bg right:30% fit](./imgs/schema.png)
 
 + We have 2 clusters with 3 workers each:
 + `C0w1`, `C0w2` and `C0w3` are workers => mininet hosts
@@ -374,7 +374,7 @@ mininet> py C0w1.delete_container("c10")
 + 2 pods need to communicate
 + Pod: group of containers with shared storage and network resources. 
 
-![bg right:45% fit](../imgs/pod_container.png)
+![bg right:45% fit](./imgs/pod_container.png)
 
 ---
 <!-- footer: C2/4: Container-Container, Section B: **How does it work in reality?** -->
@@ -883,7 +883,7 @@ We have seen how containers and services within a cluster communicate.
 
 ## Multi-cloud
 
-![h:600px](../imgs/multi-cloud.png)
+![h:600px](./imgs/multi-cloud.png)
 
 ---
 
@@ -1086,7 +1086,7 @@ Go read line number 79-94 in `main.py`.
 Understand and reproduce it.
 Examine the generated conf files in `/tmp/knetsim/skupper` folder.
 
-![bg right:50% fit](../imgs/schema.png)
+![bg right:50% fit](./imgs/schema.png)
 
 ---
 

@@ -31,7 +31,7 @@ docker run -i --privileged --rm knetsim
 
 To preview:
 ```
-marp -p ./presentation/presentation.md
+marp -p ./presentation.md
 ```
 
 ## Checking
