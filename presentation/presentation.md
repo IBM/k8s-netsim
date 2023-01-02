@@ -347,12 +347,12 @@ mininet> py C0w1.exec_container("c1", "ifconfig")
 1. Run a few commands in the container. See that only the network namespace is different from the underlying worker.
 2. Create new containers:
 ```
-mininet> py C0w1.create_container("c4")
+mininet> py C0w1.create_container("c10")
 ```
 (ignore the error it throws)
 3. Delete the new container:
 ```
-mininet> py C0w1.delete_container("c4")
+mininet> py C0w1.delete_container("c10")
 ```
 
 ---

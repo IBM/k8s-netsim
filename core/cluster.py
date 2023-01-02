@@ -80,8 +80,8 @@ class Cluster():
     def kp_vip_add(self, vip, containers):
         """
         The required nft rule looks like this:
-        nft add rule ip nat PREROUTING ip daddr 100.64.10.1 dnat to numgen inc mod 2 map {0: 11.11.0.2, 1: 11.15.48.2 }
-        This causes a dnat load-balanced round-robin between the provided ips, 2 in this case.
+        nft add rule ip nat PREROUTING ip daddr 100.64.10.1 dnat to jhash ip checksum mod 2 map {0: 11.11.0.2, 1: 11.15.48.2 }
+        This causes a dnat load-balanced randomly between the provided ips, 2 in this case.
 
         This rule is specific to the chain manually created in the worker using the setup_kp function. This also assumes that the container is setup with a default route to forward to host. This is only achieved with Flannel using isDefaultGateway parameter set to True to be passed onto the bridge cni plugin.
         """
@@ -106,7 +106,7 @@ class Cluster():
                 nft_map += ", "
             nft_map += "{0}: {1}".format(idx, ip)
         # triple curly bracked needed since we need one actual curly bracket in the output
-        nft_cmd = "nft add rule ip nat PREROUTING ip daddr {0} counter dnat to numgen inc mod {1} map {{{2}}}".format(vip, len(ips), nft_map)
+        nft_cmd = "nft add rule ip nat PREROUTING ip daddr {0} counter dnat to jhash ip checksum mod {1} map {{{2}}}".format(vip, len(ips), nft_map)
         info("Generated nft command: %s\n" % nft_cmd)
 
         # 3. Run the nft rules on all local workers
