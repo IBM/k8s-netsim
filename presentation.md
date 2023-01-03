@@ -922,7 +922,8 @@ It doesn't yet!
 + Active area of research - not solved yet
 + Some existing solutions: Cilium Multi-cluster, Istio/Consul Multi-cluster, Submariner, Skupper
 + Each solution trade-offs various aspects
-+ IBM is working on a product
+
+We are also working in this space.
 
 ---
 
@@ -1100,7 +1101,7 @@ Cons:
 1. Not efficient: in terms of performance overheads
 2. No provision for fine-grained policies 
 
-There are other solutions in the market (including our own!)
+There are other solutions in the market that address a different set of tradeoffs
 
 ---
 ## Bonus round: Service Meshes
