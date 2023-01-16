@@ -71,6 +71,9 @@ class Worker(Node):
         # enter netns and run command
         return self.cmd("ip netns exec {0} {1}".format(self._container_name(name), cmd))
 
+    def exec_container_async(self, name, cmd):
+        self.exec_container(name, "nohup " + cmd + " >&/dev/null &")
+
     def setup_kp(self):
         # prepare nft chain to be used later
         self.cmd("nft add table ip nat")

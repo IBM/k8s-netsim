@@ -77,7 +77,7 @@ def main():
     # Multi-cluster networking
 
     # start a service in a container
-    C0.get("w3").exec_container("c4", "nohup python3 -m http.server 80 >&/dev/null &")
+    C0.get("w3").exec_container_async("c4", "python3 -m http.server 80")
     ip = C0.get("w3").exec_container("c4", "hostname -I").split()[0]
     svcs = [{"name": "svc1", "cluster": "0", "host": ip, "port": "80", "lport": 1028}]
 
