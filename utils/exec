@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+cluster="$1"
+worker="$2"
+container="$3"
+
+wpid=$(ps aux | grep "mininet:C$cluster$worker" | head -n1 | awk '{print $2}')
+cname="k$cluster"_"$container"
+
+if [ -z "$container" ]; then
+   PS1="$cluster:$worker> " nsenter --net -t $wpid -- bash --norc
+  exit
+fi
+
+# needs the worker mount ns to be able to do the nested net namespace switch
+nsenter --mount --net -t $wpid -- bash -c "PS1=\"$cluster:$worker:$container> \" ip netns exec $cname bash --norc"

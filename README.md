@@ -27,6 +27,17 @@ Run:
 docker run -i --privileged --rm knetsim
 ```
 
+In the container, while the simulation is running, you can also open additional shells directly into workers or containers:
+
+Open a shell into w1 in Cluster 0:
+```
+./utils/exec 0 w1
+```
+Open a shell into c1 in Cluster 0 (running on w1):
+```
+./utils/exec 0 w1 c1
+```
+
 ## Presentation:
 
 To preview:
