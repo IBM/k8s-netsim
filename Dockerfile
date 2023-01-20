@@ -114,6 +114,9 @@ RUN apt-get install -y tcpdump
 RUN apt-get install -y tshark
 RUN apt-get install -y less
 
+RUN apt-get update
+RUN apt-get install -y curl
+
 COPY . /simulator
 WORKDIR /simulator
 

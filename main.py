@@ -93,6 +93,20 @@ def main():
     ip = C1.get("w1").IP()
     print(C1.get("w2").exec_container("c2", "wget http://{0}:{1}".format(ip, 1028)))
 
+    # Ingress setup
+
+    # Setup containers for ingress
+    C0.get("w2").create_container("ic0")
+    C0.get("w2").exec_container_async("ic0", "./utils/ss.py S1-W2")
+    C0.get("w3").create_container("ic1")
+    C0.get("w3").exec_container_async("ic1", "./utils/ss.py S1-W3")
+    C0.kp_vip_add("100.64.11.1", ["ic0", "ic1"])
+    C0.get("w2").create_container("ic2")
+    C0.get("w2").exec_container_async("ic2", "./utils/ss.py S2-W2")
+    C0.get("w3").create_container("ic3")
+    C0.get("w3").exec_container_async("ic3", "./utils/ss.py S2-W3")
+    C0.kp_vip_add("100.64.11.2", ["ic2", "ic3"])
+
     CLI(net)
 
     # don't need to delete_containers manually, since we have a teardown function that does it
