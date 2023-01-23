@@ -116,6 +116,7 @@ RUN apt-get install -y less
 
 RUN apt-get update
 RUN apt-get install -y curl
+RUN apt-get install -y nginx
 
 COPY . /simulator
 WORKDIR /simulator

@@ -8,6 +8,8 @@ import json
 from mininet.node import Node
 from mininet.log import info
 
+from .ingress import create_conf, ingress_command
+
 class Worker(Node):
     def config(self, **params):
         super(Worker, self).config(**params)
@@ -84,6 +86,11 @@ class Worker(Node):
 
         # setup gateway for service vips
         self.cmd("ip route add 100.64.0.0/16 dev flannel.100")
+
+    def run_ingress(self, name, port, conf):
+        path = "/tmp/knetsim/{0}/{1}.conf".format(self.name, name)
+        create_conf(path, port, conf)
+        self.cmd(ingress_command(path))
 
     def terminate(self):
         # undo things, if needed

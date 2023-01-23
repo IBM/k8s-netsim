@@ -107,6 +107,10 @@ def main():
     C0.get("w3").exec_container_async("ic3", "./utils/ss.py S2-W3")
     C0.kp_vip_add("100.64.11.2", ["ic2", "ic3"])
 
+    C0.get("w1").run_ingress("grp1",
+                             8001, [{"path": "/svc1", "endpoint": "100.64.11.1:8000"},
+                                    {"path": "/svc2", "endpoint": "100.64.11.2:8000"}])
+
     CLI(net)
 
     # don't need to delete_containers manually, since we have a teardown function that does it
