@@ -78,6 +78,12 @@ class Worker(Node):
         # prepare nft chain to be used later
         self.cmd("nft add table ip nat")
         self.cmd("nft add chain nat PREROUTING { type nat hook prerouting priority dstnat\; }")
+        # for packets originating from the worker itself
+        self.cmd("nft add table ip mynat")
+        self.cmd("nft add chain mynat OUTPUT { type nat hook output priority filter\; }")
+
+        # setup gateway for service vips
+        self.cmd("ip route add 100.64.0.0/16 dev flannel.100")
 
     def terminate(self):
         # undo things, if needed

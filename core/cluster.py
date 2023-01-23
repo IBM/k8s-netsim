@@ -107,11 +107,13 @@ class Cluster():
             nft_map += "{0}: {1}".format(idx, ip)
         # triple curly bracked needed since we need one actual curly bracket in the output
         nft_cmd = "nft add rule ip nat PREROUTING ip daddr {0} counter dnat to jhash ip checksum mod {1} map {{{2}}}".format(vip, len(ips), nft_map)
+        ## similar rule generated for host access
+        nft_cmd1 = "nft add rule ip mynat OUTPUT ip daddr {0} counter dnat to jhash ip checksum mod {1} map {{{2}}}".format(vip, len(ips), nft_map)
         info("Generated nft command: %s\n" % nft_cmd)
 
         # 3. Run the nft rules on all local workers
         for w in self.workers:
-            info("Running nft cmd on %s: %s\n" % (w, w.cmd(nft_cmd)))
+            info("Running nft cmd on %s: %s, %s\n" % (w, w.cmd(nft_cmd), w.cmd(nft_cmd1)))
 
     def get_skupper_host(self):
         return self.workers[0].IP()
