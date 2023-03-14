@@ -152,10 +152,11 @@ docker run -it --privileged --rm --entrypoint bash knetsim
 1. Workers and containers :arrow_left:
 2. Container-Container communication
 3. Service abstraction
-4. Multi-cluster communication
+4. Ingress
+5. Multi-cluster communication
 
 ---
-<!-- footer: C1/4: Workers and Containers, Section A: **Introduction** -->
+<!-- footer: C1/5: Workers and Containers, Section A: **Introduction** -->
 
 ![](https://d33wubrfki0l68.cloudfront.net/2475489eaf20163ec0f54ddc1d92aa8d4c87c96b/e7c81/images/docs/components-of-kubernetes.svg)
 
@@ -175,7 +176,7 @@ docker run -it --privileged --rm --entrypoint bash knetsim
     
 
 ---
-<!-- footer: C1/4: Workers and Containers, Section B: **How does it work in reality?** -->
+<!-- footer: C1/5: Workers and Containers, Section B: **How does it work in reality?** -->
 
 # C1: How does it work?
 
@@ -186,7 +187,7 @@ docker run -it --privileged --rm --entrypoint bash knetsim
 
 
 ---
-<!-- footer: C1/4: Workers and Containers, Section C: **How do we do it?** -->
+<!-- footer: C1/5: Workers and Containers, Section C: **How do we do it?** -->
 
 # C1: How do we do it?
 
@@ -287,7 +288,7 @@ ip netns del myns
 ![](http://mininet.org/images/frontpage_diagram.png)
 
 ---
-<!-- footer: C1/4: Workers and Containers, Section D: **Hands on** -->
+<!-- footer: C1/5: Workers and Containers, Section D: **Hands on** -->
 
 # Our Topology
 
@@ -363,10 +364,11 @@ mininet> py C0w1.delete_container("c10")
 1. Workers and containers :heavy_check_mark:
 2. Container-Container communication :arrow_left:
 3. Service abstraction
-4. Multi-cluster communication
+4. Ingress
+5. Multi-cluster communication
 
 ---
-<!-- footer: C2/4: Container-Container, Section A: **Introduction** -->
+<!-- footer: C2/5: Container-Container, Section A: **Introduction** -->
 
 ## C2: Container-container communication
 
@@ -377,7 +379,7 @@ mininet> py C0w1.delete_container("c10")
 ![bg right:45% fit](./imgs/pod_container.png)
 
 ---
-<!-- footer: C2/4: Container-Container, Section B: **How does it work in reality?** -->
+<!-- footer: C2/5: Container-Container, Section B: **How does it work in reality?** -->
 
 ## C2: How does it work?
 
@@ -482,7 +484,7 @@ A plugin must be called with the following env variables:
 ```
 
 ---
-<!-- footer: C2/4: Container-Container, Section C: **How do we do it?** -->
+<!-- footer: C2/5: Container-Container, Section C: **How do we do it?** -->
 
 ## C2: How do we do it?
 
@@ -571,7 +573,7 @@ FLANNEL_IPMASQ=false
 ```
 
 ---
-<!-- footer: C2/4: Container-Container, Section D: **Hands on** -->
+<!-- footer: C2/5: Container-Container, Section D: **Hands on** -->
 
 ## C2: Hands on :hammer:
 
@@ -633,10 +635,11 @@ tshark -V -d udp.port==8472,vxlan port 8472 |& less
 1. Workers and containers :heavy_check_mark:
 2. Container-Container communication :heavy_check_mark:
 3. Service abstraction :arrow_left:
-4. Multi-cluster communication
+4. Ingress
+5. Multi-cluster communication
 
 ---
-<!-- footer: C3/4: Services, Section A: **Introduction** -->
+<!-- footer: C3/5: Services, Section A: **Introduction** -->
 
 ## C3: Service Abstraction
 
@@ -646,7 +649,7 @@ We already know about pod ips, how do services work?
 ![bg height:400px right](https://cloudstackgroup.com/wp-content/uploads/2021/04/services.png)
 
 ---
-<!-- footer: C3/4: Services, Section B: **How does it work in reality?** -->
+<!-- footer: C3/5: Services, Section B: **How does it work in reality?** -->
 
 ## Services: using DNS
 
@@ -665,7 +668,7 @@ We already know about pod ips, how do services work?
 ![height:600px](https://miro.medium.com/max/1200/0*BudaotV33c7o59OS)
 
 ---
-<!-- footer: C3/4: Services, Section C: **How do we do it?** -->
+<!-- footer: C3/5: Services, Section C: **How do we do it?** -->
 
 ## C3: How do we do it?
 
@@ -818,7 +821,7 @@ Exit the container.
 + A lot of other handy features
 
 ---
-<!-- footer: C3/4: Services, Section D: **Hands on** -->
+<!-- footer: C3/5: Services, Section D: **Hands on** -->
 
 ## C3: Hands on
 
@@ -847,24 +850,37 @@ This means, we can access the containers c2 and c3 using this VIP.
 1. Workers and containers :heavy_check_mark:
 2. Container-Container communication :heavy_check_mark:
 3. Service abstraction :heavy_check_mark:
-4. Multi-cluster communication :arrow_left:
+4. Ingress :arrow_left:
+5. Multi-cluster communication
 
 ---
-<!-- footer: C4/4: Multi-cluster, Section A: **Introduction** -->
-
-## C4: Multi-cluster communication
-
-We have seen how containers and services within a cluster communicate.
-
-**What about services across clusters?**
-
----
+<!-- footer: C4/5: Ingress, Section A: **Introduction** -->
 
 ## Exposing services
 
 + Ingress
 
 ![bg right:70% fit](https://d33wubrfki0l68.cloudfront.net/36c8934ba20b97859854610063337d2072ea291a/28e8b/docs/images/ingressfanout.svg)
+
+---
+<!-- footer: Reorientation: end of chapter 4 -->
+
+# Progress so far
+
+1. Workers and containers :heavy_check_mark:
+2. Container-Container communication :heavy_check_mark:
+3. Service abstraction :heavy_check_mark:
+4. Ingress :heavy_check_mark:
+5. Multi-cluster communication :arrow_left:
+
+---
+<!-- footer: C5/5: Multi-cluster, Section A: **Introduction** -->
+
+## C5: Multi-cluster communication
+
+We have seen how containers and services within a cluster communicate.
+
+**What about services across clusters?**
 
 ---
 
@@ -913,9 +929,9 @@ We have seen how containers and services within a cluster communicate.
 + These are features required for within cluster too - but a number of solutions exist for this
 
 ---
-<!-- footer: C4/4: Multi-cluster, Section B: **How does it work in reality?** -->
+<!-- footer: C5/5: Multi-cluster, Section B: **How does it work in reality?** -->
 
-## C4: How does it work?
+## C5: How does it work?
 
 It doesn't yet!
 
@@ -987,9 +1003,9 @@ A bit more complicated:
 + Service-Controller: to manage services as they come up/down
 
 ---
-<!-- footer: C4/4: Multi-cluster, Section C: **How do we do it?** -->
+<!-- footer: C5/5: Multi-cluster, Section C: **How do we do it?** -->
 
-## C4: How do we do it?
+## C5: How do we do it?
 
 We also use skupper-router, with manual configuration.
 Let us look at how the config file looks like.
@@ -1078,9 +1094,9 @@ Let us look at how the config file looks like.
 3. Containers in the cluster should connect to the skupper-router at a particular port for a given service.
 
 ---
-<!-- footer: C4/4: Multi-cluster, Section D: **Hands on** -->
+<!-- footer: C5/5: Multi-cluster, Section D: **Hands on** -->
 
-## C4: Hands on
+## C5: Hands on
 
 Go read line number 79-94 in `main.py`.
 
