@@ -858,9 +858,111 @@ This means, we can access the containers c2 and c3 using this VIP.
 
 ## Exposing services
 
-+ Ingress
++ Ingress: allows exposing of endpoints outside the cluster
 
 ![bg right:70% fit](https://d33wubrfki0l68.cloudfront.net/36c8934ba20b97859854610063337d2072ea291a/28e8b/docs/images/ingressfanout.svg)
+
+---
+<!-- footer: C4/5: Ingress, Section B: **How does it work in reality?** -->
+
+## C4: How does it work?
+
++ Allows to expose particular services at particular ports and paths
++ Allows multiple services to be exposed at a single url - with path matches
+
+![bg right:50% fit](./imgs/ingress-resource.png)
+
+---
+## Ingress Controller
+
++ Ingress resource spec is not enough - we need a controller to actually implement this exposing
++ Lot of available options:
+  - Each cloud provider has their own Ingress Controller implmentation
+  - HAProxy
+  - Nginx
+  - Traefik
+  - Istio
+  - Kong, Kush, Citrix, F5, Gloo.... the list goes on
+
+---
+<!-- footer: C4/5: Ingress, Section C: **How do we do it?** -->
+
+## C4: How do we do it?
+
++ We build our own ingress using Nginx
++ Use the same open-source standard nginx load balancer
++ Build our own configuration for it
+
++ Caveat: as before, this is not dynamic - manually built
+
+---
+<!-- footer: C4/5: Ingress, Section D: **Hands on** -->
+
+## Setting up some services
+
+```
+    # Setup containers for ingress
+    C0.get("w2").create_container("ic0")
+    C0.get("w2").exec_container_async("ic0", "./utils/ss.py S1-W2")
+    C0.get("w3").create_container("ic1")
+    C0.get("w3").exec_container_async("ic1", "./utils/ss.py S1-W3")
+    C0.kp_vip_add("100.64.11.1", ["ic0", "ic1"])
+    C0.get("w2").create_container("ic2")
+    C0.get("w2").exec_container_async("ic2", "./utils/ss.py S2-W2")
+    C0.get("w3").create_container("ic3")
+    C0.get("w3").exec_container_async("ic3", "./utils/ss.py S2-W3")
+    C0.kp_vip_add("100.64.11.2", ["ic2", "ic3"])
+```
++ A simple server script to serve static messages
++ Two replicas (in name) to represent the first service 100.64.11.1
++ Two replicas (in name) to represent the second service 100.64.11.2
+
+---
+
+## Ingress definition
+
+```
+    C0.get("w1").run_ingress("grp1",
+                             8001, [{"path": "/svc1", "endpoint": "100.64.11.1:8000"},
+                                    {"path": "/svc2", "endpoint": "100.64.11.2:8000"}])
+```
+to create an ingress at worker 1 that:
++ serves the first service at the path /svc1
++ serves the second service at the path /svc2
+
+Note that the backing pods for both services are on workers 2 and 3, while the ingress is being exposed on worker 1.
+
+---
+## Accessing the ingress
+
+Now, first access the service normally:
+```
+mininet> C0w1 curl 100.64.11.1:8000
+S1-W2
+```
+If you run this a few times, the output fill alternate between S1-W2 and S1-W3. You can do a similar check with the other service: "100.64.11.2:8000".
+
+Now, access it via the ingress:
+```
+mininet> C0w1 curl localhost:8001/svc1
+S1-W2
+```
+If you call it a few times, you will see the output vary as before. Similarly call the "/svc2" path on the host.
+
+---
+## Accessing from "outside"
+
+First check the IP of the worker1 host:
+```
+mininet> C0w1 hostname -I
+10.0.0.3 ...
+```
+
+Now, run the curl command above from another worker in the cluster. Let us use the etcd nodes for this purpose - they have nothing programmed on them - no services etc.
+```
+mininet> C0e1 curl 10.0.0.3:8001/svc1
+```
+Check that this access works for both paths. Think about the full stack of operations that are running right now to make this work.
 
 ---
 <!-- footer: Reorientation: end of chapter 4 -->
